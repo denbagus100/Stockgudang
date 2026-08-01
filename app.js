@@ -54,12 +54,16 @@ function getDatabaseUser() {
 
 function cekStatusLogin() {
     const elHalamanLogin = document.getElementById("halamanLogin");
+    const elMainApp = document.getElementById("mainApp");
+
     if (userAktifInfo && userAktifInfo.nik) {
         if (elHalamanLogin) elHalamanLogin.style.display = "none";
+        if (elMainApp) elMainApp.style.display = "block"; // Tampilkan Main App
         userAktif = userAktifInfo.nama || userAktifInfo.nik;
         terapkanAksesRole();
     } else {
-        if (elHalamanLogin) elHalamanLogin.style.display = "flex";
+        if (elMainApp) elMainApp.style.display = "none"; // Sembunyikan Main App
+        if (elHalamanLogin) elHalamanLogin.style.display = "flex"; // Tampilkan Form Login
     }
 }
 
@@ -82,7 +86,12 @@ function prosesLogin(event) {
         localStorage.setItem("userAktifInfo", JSON.stringify(userAktifInfo));
         userAktif = akunDitemukan.nama;
 
-        document.getElementById("halamanLogin").style.display = "none";
+        const elHalamanLogin = document.getElementById("halamanLogin");
+        const elMainApp = document.getElementById("mainApp");
+
+        if (elHalamanLogin) elHalamanLogin.style.display = "none";
+        if (elMainApp) elMainApp.style.display = "block";
+
         terapkanAksesRole();
         alert(`🔓 Login Berhasil!\nSelamat Datang, ${akunDitemukan.nama}`);
     } else {
@@ -116,6 +125,9 @@ function prosesLogout() {
         if (modalSetting) modalSetting.style.display = "none";
 
         const elHalamanLogin = document.getElementById("halamanLogin");
+        const elMainApp = document.getElementById("mainApp");
+
+        if (elMainApp) elMainApp.style.display = "none";
         if (elHalamanLogin) elHalamanLogin.style.display = "flex";
     }
 }
@@ -350,7 +362,7 @@ function mulaiScan() {
                     barcode: barang.barcode,
                     expired: barang.expired
                 });
-                tampilRiwayat();
+                if (typeof tampilRiwayat === "function") tampilRiwayat();
             } else {
                 alert("❌ Barang dengan barcode " + decodedText + " tidak ditemukan.");
             }
@@ -359,6 +371,32 @@ function mulaiScan() {
     ).catch(err => {
         console.error("Gagal membuka kamera:", err);
         alert("Tidak dapat mengakses kamera. Pastikan izin kamera sudah diberikan.");
+        tutupScan();
+    });
+}
+
+function scanUntukTambahBarang() {
+    const elModalScan = document.getElementById("modalScan");
+    if (elModalScan) elModalScan.style.display = "flex";
+
+    if (!html5QrCode) {
+        html5QrCode = new Html5Qrcode("reader");
+    }
+
+    html5QrCode.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 220, height: 220 } },
+        function (decodedText) {
+            if (typeof beep === "function") beep();
+            tutupScan();
+
+            const inputBarcode = document.getElementById("tambahBarcode");
+            if (inputBarcode) inputBarcode.value = decodedText;
+        },
+        function (error) {}
+    ).catch(err => {
+        console.error("Gagal membuka kamera:", err);
+        alert("📷 Tidak dapat mengakses kamera. Pastikan izin kamera sudah diberikan!");
         tutupScan();
     });
 }
@@ -485,7 +523,100 @@ function kelolaDanHapusUser() {
 }
 
 // ==========================================================
-// 7. UTILITY & FUNGSI LAINNYA
+// 7. FUNGSI TAMBAH BARANG BARU (TERHUBUNG GOOGLE SHEETS)
+// ==========================================================
+function bukaTambahBarang(defaultBarcode = "") {
+    const elBarcode = document.getElementById("tambahBarcode");
+    const elNama = document.getElementById("tambahNama");
+    const elSku = document.getElementById("tambahSku");
+    const elStok = document.getElementById("tambahStok");
+    const elLokasi = document.getElementById("tambahLokasi");
+    const elExpired = document.getElementById("tambahExpired");
+    const elModal = document.getElementById("modalTambahBarang");
+
+    if (elBarcode) elBarcode.value = defaultBarcode;
+    if (elNama) elNama.value = "";
+    if (elSku) elSku.value = "";
+    if (elStok) elStok.value = "";
+    if (elLokasi) elLokasi.value = "";
+    if (elExpired) elExpired.value = "";
+
+    if (elModal) {
+        elModal.style.display = "flex";
+    } else {
+        alert("⚠️ Modal Tambah Barang (modalTambahBarang) tidak ditemukan di HTML!");
+    }
+}
+
+function tutupTambahBarang() {
+    const elModal = document.getElementById("modalTambahBarang");
+    if (elModal) elModal.style.display = "none";
+}
+
+function simpanBarangBaru() {
+    const barcode = document.getElementById("tambahBarcode").value.trim();
+    const nama = document.getElementById("tambahNama").value.trim();
+    const sku = document.getElementById("tambahSku").value.trim();
+    const stok = Number(document.getElementById("tambahStok").value);
+    const lokasi = document.getElementById("tambahLokasi").value.trim();
+    const expired = document.getElementById("tambahExpired").value;
+
+    if (!barcode || !nama || isNaN(stok) || stok < 0) {
+        alert("⚠️ Mohon isi Barcode, Nama Barang, dan Jumlah Stok dengan benar.");
+        return;
+    }
+
+    const barangAda = daftarBarang.find(b => String(b.barcode) === barcode);
+    if (barangAda) {
+        alert(`⚠️ Barcode ${barcode} sudah terdaftar atas nama: ${barangAda.nama}`);
+        return;
+    }
+
+    const barangBaru = {
+        barcode: barcode,
+        nama: nama,
+        sku: sku || "-",
+        stok: stok,
+        lokasi: lokasi || "-",
+        expired: expired || "-"
+    };
+
+    daftarBarang.push(barangBaru);
+    localStorage.setItem("daftarBarang", JSON.stringify(daftarBarang));
+
+    const logHistory = {
+        waktu: new Date().toLocaleString("id-ID"),
+        jenis: "➕ Tambah Barang Baru",
+        nama: nama,
+        barcode: barcode,
+        jumlah: stok,
+        user: userAktif
+    };
+    historyTransaksi.unshift(logHistory);
+    localStorage.setItem("historyTransaksi", JSON.stringify(historyTransaksi));
+
+    syncKeGoogleSheet();
+    kirimTransaksiKeGoogleSheet({
+        jenis: "BARANG BARU",
+        barcode: barcode,
+        namaBarang: nama,
+        jumlah: stok,
+        user: userAktif,
+        keterangan: "Pendaftaran Barang Baru"
+    });
+
+    if (typeof updateDashboardStats === "function") updateDashboardStats();
+
+    tutupTambahBarang();
+    alert(`✅ Barang Baru Berhasil Ditambahkan!\n\nNama: ${nama}\nBarcode: ${barcode}\nStok: ${stok}`);
+
+    if (typeof tampilkanDetailBarang === "function") {
+        tampilkanDetailBarang(barangBaru);
+    }
+}
+
+// ==========================================================
+// 8. UTILITY & UTILS
 // ==========================================================
 function cekExpired(tanggalExpired) {
     if (!tanggalExpired || tanggalExpired === "-") return "🟢 AMAN";
@@ -519,137 +650,4 @@ function switchDarkMode(isDark) {
         document.body.classList.remove("dark-mode");
         localStorage.setItem("darkMode", "false");
     }
-}
-// ==========================================================
-// FUNGSI TAMBAH BARANG BARU (TERHUBUNG GOOGLE SHEETS)
-// ==========================================================
-
-// 1. Membuka Modal Form Tambah Barang
-function bukaTambahBarang(defaultBarcode = "") {
-    const elBarcode = document.getElementById("tambahBarcode");
-    const elNama = document.getElementById("tambahNama");
-    const elSku = document.getElementById("tambahSku");
-    const elStok = document.getElementById("tambahStok");
-    const elLokasi = document.getElementById("tambahLokasi");
-    const elExpired = document.getElementById("tambahExpired");
-    const elModal = document.getElementById("modalTambahBarang");
-
-    if (elBarcode) elBarcode.value = defaultBarcode;
-    if (elNama) elNama.value = "";
-    if (elSku) elSku.value = "";
-    if (elStok) elStok.value = "";
-    if (elLokasi) elLokasi.value = "";
-    if (elExpired) elExpired.value = "";
-
-    if (elModal) {
-        elModal.style.display = "flex";
-    } else {
-        alert("⚠️ Modal Tambah Barang (modalTambahBarang) tidak ditemukan di HTML!");
-    }
-}
-
-// 2. Menutup Modal Form Tambah Barang
-function tutupTambahBarang() {
-    const elModal = document.getElementById("modalTambahBarang");
-    if (elModal) elModal.style.display = "none";
-}
-
-// 3. Menyimpan Barang Baru Ke LocalStorage & Google Sheets
-function simpanBarangBaru() {
-    const barcode = document.getElementById("tambahBarcode").value.trim();
-    const nama = document.getElementById("tambahNama").value.trim();
-    const sku = document.getElementById("tambahSku").value.trim();
-    const stok = Number(document.getElementById("tambahStok").value);
-    const lokasi = document.getElementById("tambahLokasi").value.trim();
-    const expired = document.getElementById("tambahExpired").value;
-
-    // Validasi Input Utama
-    if (!barcode || !nama || isNaN(stok) || stok < 0) {
-        alert("⚠️ Mohon isi Barcode, Nama Barang, dan Jumlah Stok dengan benar.");
-        return;
-    }
-
-    // Cek apakah Barcode sudah pernah terdaftar
-    const barangAda = daftarBarang.find(b => String(b.barcode) === barcode);
-    if (barangAda) {
-        alert(`⚠️ Barcode ${barcode} sudah terdaftar atas nama: ${barangAda.nama}`);
-        return;
-    }
-
-    // Buat objek barang baru
-    const barangBaru = {
-        barcode: barcode,
-        nama: nama,
-        sku: sku || "-",
-        stok: stok,
-        lokasi: lokasi || "-",
-        expired: expired || "-"
-    };
-
-    // 1. Masukkan ke daftarBarang & simpan di LocalStorage
-    daftarBarang.push(barangBaru);
-    localStorage.setItem("daftarBarang", JSON.stringify(daftarBarang));
-
-    // 2. Catat Riwayat Transaksi
-    const logHistory = {
-        waktu: new Date().toLocaleString("id-ID"),
-        jenis: "➕ Tambah Barang Baru",
-        nama: nama,
-        barcode: barcode,
-        jumlah: stok,
-        user: userAktif
-    };
-    historyTransaksi.unshift(logHistory);
-    localStorage.setItem("historyTransaksi", JSON.stringify(historyTransaksi));
-
-    // 3. Sync Real-Time ke Google Sheets
-    syncKeGoogleSheet();
-    kirimTransaksiKeGoogleSheet({
-        jenis: "BARANG BARU",
-        barcode: barcode,
-        namaBarang: nama,
-        jumlah: stok,
-        user: userAktif,
-        keterangan: "Pendaftaran Barang Baru"
-    });
-
-    // 4. Update Tampilan Dashboard
-    if (typeof updateDashboardStats === "function") updateDashboardStats();
-
-    // 5. Tutup modal dan beri tahu pengguna
-    tutupTambahBarang();
-    alert(`✅ Barang Baru Berhasil Ditambahkan!\n\nNama: ${nama}\nBarcode: ${barcode}\nStok: ${stok}`);
-
-    // Tampilkan detail barang jika fungsinya ada
-    if (typeof tampilkanDetailBarang === "function") {
-        tampilkanDetailBarang(barangBaru);
-    }
-}
-// ==========================================================
-// SCAN BARCODE KHUSUS FORM TAMBAH BARANG BARU
-// ==========================================================
-function scanUntukTambahBarang() {
-    const elModalScan = document.getElementById("modalScan");
-    if (elModalScan) elModalScan.style.display = "flex";
-
-    if (!html5QrCode) {
-        html5QrCode = new Html5Qrcode("reader");
-    }
-
-    html5QrCode.start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 220, height: 220 } },
-        function (decodedText) {
-            if (typeof beep === "function") beep();
-            tutupScan();
-
-            const inputBarcode = document.getElementById("tambahBarcode");
-            if (inputBarcode) inputBarcode.value = decodedText;
-        },
-        function (error) {}
-    ).catch(err => {
-        console.error("Gagal membuka kamera:", err);
-        alert("📷 Tidak dapat mengakses kamera. Pastikan izin kamera sudah diberikan!");
-        tutupScan();
-    });
 }
