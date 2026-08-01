@@ -1,0 +1,18 @@
+[
+  {
+    "barcode":"8991906106250",
+    "sku":"123456",
+    "nama":"ABC Seasoning 250gr",
+    "stok":25,
+    "lokasi":"A-01-02",
+    "expired":"2026-08-15"
+  },
+  {
+    "barcode":"8999876543210",
+    "sku":"987654",
+    "nama":"Kecap Manis",
+    "stok":12,
+    "lokasi":"B-03-01",
+    "expired":"2026-09-20"
+  }
+]

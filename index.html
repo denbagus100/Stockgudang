@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Gudang</title>
+
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/modal.css">
+</head>
+<body>
+
+<!-- HALAMAN LOGIN (MENDUKUNG AUTOFILL / SIMPAN PASSWORD BROWSER) -->
+<div id="halamanLogin" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0f172a; display: flex; align-items: center; justify-content: center; z-index: 99999;">
+    <div style="background: white; width: 90%; max-width: 380px; padding: 25px; border-radius: 16px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.4);">
+        <div style="font-size: 42px; margin-bottom: 8px;">📦</div>
+        <h2 style="margin: 0 0 4px 0; color: #0f172a; font-size: 22px;">Sistem Gudang</h2>
+        <p style="font-size: 13px; color: #64748b; margin-bottom: 20px;">Silakan masukkan NIK & Password Anda</p>
+
+        <!-- Tambahkan atribut action & method agar dikenali browser sebagai form login resmi -->
+        <form id="formLoginUtama" action="javascript:void(0);" method="POST" onsubmit="prosesLogin(event)">
+            <div style="margin-bottom: 12px; text-align: left;">
+                <label style="font-size: 12px; font-weight: bold; color: #475569;">NIK (Nomor Induk Karyawan)</label>
+                <!-- Tambahkan name="username" dan autocomplete="username" -->
+                <input type="text" id="inputNik" name="username" placeholder="Masukkan NIK" autocomplete="username" inputmode="numeric" style="width: 100%; padding: 10px; font-size: 14px; border-radius: 8px; border: 1px solid #cbd5e1; box-sizing: border-box; margin-top: 4px;" required>
+            </div>
+
+            <div style="margin-bottom: 18px; text-align: left;">
+                <label style="font-size: 12px; font-weight: bold; color: #475569;">Password</label>
+                <!-- Tambahkan name="password" dan autocomplete="current-password" -->
+                <input type="password" id="inputPassword" name="password" placeholder="Masukkan Password" autocomplete="current-password" style="width: 100%; padding: 10px; font-size: 14px; border-radius: 8px; border: 1px solid #cbd5e1; box-sizing: border-box; margin-top: 4px;" required>
+            </div>
+
+            <button type="submit" style="width: 100%; background: #2563eb; color: white; border: none; padding: 11px; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer;">🔐 Masuk Sistem</button>
+        </form>
+    </div>
+</div>
+
+
+
+<header class="topbar">
+    <h2>📦 Stock Gudang</h2>
+    <span id="tanggal"></span>
+</header>
+
+<div class="dashboard">
+    <div class="card">
+        <h2>Riwayat Scan</h2> 
+        <div id="riwayatScan">Belum ada scan</div>
+    </div>
+
+    <div class="search-box">
+        <input type="text" id="keyword" placeholder="Cari Barcode / SKU / Nama Barang">
+        <button onclick="cariBarang()">🔍 Cari</button>
+    </div>
+
+    <div class="info-card">
+        <h3>Total Barang</h3>
+        <h1 id="totalBarang">0</h1>
+    </div>
+
+    <div class="info-card">
+        <h3>Barang Hampir Expired</h3>
+        <h1 id="expired">0</h1>
+    </div>
+</div>
+
+<div class="grid-menu">
+    <button onclick="bukaDaftarStok()">📊<br>Stok</button>
+    <button onclick="bukaExpiredBarang()">⚠️<br>Expired</button>
+    <button onclick="bukaHistory()">📄<br>History</button>
+    <button onclick="bukaTambahBarang()">➕<br>Tambah Barang</button>
+</div>
+
+<!-- Modal Tambah Barang Baru -->
+<div id="modalTambahBarang" class="modal">
+    <div class="modal-content" style="max-width: 450px; text-align: left;">
+        <h2>➕ Tambah Barang Baru</h2>
+        <p style="font-size: 13px; color: #666; margin-bottom: 12px;">Daftarkan barcode baru ke dalam sistem.</p>
+        
+        <div style="margin-bottom: 10px;">
+            <label style="font-size: 13px; font-weight: bold;">Barcode:</label>
+            <div style="display: flex; gap: 6px; margin-top: 4px;">
+                <input type="text" id="tambahBarcode" placeholder="Scan atau ketik barcode..." style="flex: 1; padding: 8px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box;">
+                <button type="button" onclick="scanUntukTambahBarang()" style="background: #1565C0; color: white; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 16px;" title="Scan Barcode">📷</button>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 10px;">
+            <label style="font-size: 13px; font-weight: bold;">Nama Barang:</label>
+            <input type="text" id="tambahNama" placeholder="Contoh: Minyak Goreng 1L" style="width: 100%; padding: 8px; margin-top: 4px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box;">
+        </div>
+
+        <div style="margin-bottom: 10px;">
+            <label style="font-size: 13px; font-weight: bold;">SKU (Opsional):</label>
+            <input type="text" id="tambahSku" placeholder="Contoh: SKU-005" style="width: 100%; padding: 8px; margin-top: 4px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box;">
+        </div>
+
+        <div style="margin-bottom: 10px;">
+            <label style="font-size: 13px; font-weight: bold;">Stok Awal:</label>
+            <input type="number" id="tambahStok" placeholder="Contoh: 10" style="width: 100%; padding: 8px; margin-top: 4px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box;">
+        </div>
+
+        <div style="margin-bottom: 10px;">
+            <label style="font-size: 13px; font-weight: bold;">Lokasi Rak:</label>
+            <input type="text" id="tambahLokasi" placeholder="Contoh: Rak C-03" style="width: 100%; padding: 8px; margin-top: 4px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box;">
+        </div>
+
+        <div style="margin-bottom: 15px;">
+            <label style="font-size: 13px; font-weight: bold;">Tanggal Expired:</label>
+            <input type="date" id="tambahExpired" style="width: 100%; padding: 8px; margin-top: 4px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box;">
+        </div>
+
+        <div class="modal-action">
+            <button onclick="simpanBarangBaru()" style="background: #16a34a; color: white;">💾 Simpan Barang</button>
+            <button onclick="tutupTambahBarang()">❌ Batal</button>
+        </div>
+    </div>
+</div>
+<!-- Box Kelola User (Khusus Admin) -->
+<div class="khusus-admin" style="background: #f0fdf4; padding: 12px; border-radius: 12px; margin-bottom: 12px; border: 1px solid #bbf7d0; text-align: left;">
+    <p style="font-size: 13px; color: #166534; margin-bottom: 8px;"><b>👤 Kelola Akun & NIK:</b></p>
+    <div style="display: flex; gap: 8px;">
+        <button type="button" onclick="tambahUserBaruPrompt()" style="flex: 1; background: #16a34a; color: white; border: none; padding: 9px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px;">
+            ➕ Tambah NIK
+        </button>
+        <button type="button" onclick="kelolaDanHapusUser()" style="flex: 1; background: #dc2626; color: white; border: none; padding: 9px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px;">
+            🗑️ Hapus NIK
+        </button>
+    </div>
+</div>
+
+
+<!-- Modal Pop-Up Scanner Barcode -->
+<div id="modalScan" class="modal">
+    <div class="modal-content" style="max-width: 420px; text-align: center;">
+        <h2 style="margin-bottom: 10px;">📷 Scan Barcode</h2>
+        <p style="font-size: 13px; color: #666; margin-bottom: 15px;">Arahkan kamera ke barcode barang</p>
+        
+        <div id="reader" style="width: 100%; border-radius: 12px; overflow: hidden; background: #000;"></div>
+
+        <div class="modal-action" style="margin-top: 15px;">
+            <button onclick="tutupScan()" style="background: #d32f2f; color: white;">❌ Batal</button>
+        </div>
+    </div>
+</div>
+
+<!-- Detail Barang -->
+<div id="detailBarang" class="card" style="display:none;">
+    <h2 id="namaBarang"></h2>
+    <p><b>Barcode :</b> <span id="hasilScanText"></span></p>
+    <p><b>SKU :</b> <span id="skuBarang"></span></p>
+    <p><b>Stok :</b> <span id="stokBarang"></span></p>
+    <p><b>Lokasi :</b> <span id="lokasiBarang"></span></p>
+    <p><b>Expired :</b> <span id="expiredBarang"></span></p>
+
+    <button onclick="bukaStockIn()">📥 Stock In</button>
+    <button onclick="bukaStockOut()">📤 Stock Out</button>
+    <button onclick="bukaMove()">🔄 Move</button>
+</div>
+
+<!-- Modal Stock IN -->
+<div id="modalStockIn" class="modal">
+    <div class="modal-content">
+        <h2>📥 Stock IN</h2>
+        <p><b>Barang :</b> <span id="inNamaBarang"></span></p>
+        <p><b>Barcode :</b> <span id="inBarcode"></span></p>
+        <p><b>Stok :</b> <span id="inStok"></span></p>
+        <input type="number" id="jumlahIN" placeholder="Jumlah Masuk">
+        <div class="modal-action">
+            <button onclick="simpanStockIn()">💾 Simpan</button>
+            <button onclick="tutupStockIn()">❌ Batal</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Stock OUT -->
+<div id="modalStockOut" class="modal">
+    <div class="modal-content">
+        <h2>📤 Stock OUT</h2>
+        <p><b>Barang :</b> <span id="outNamaBarang"></span></p>
+        <p><b>Barcode :</b> <span id="outBarcode"></span></p>
+        <p><b>Stok :</b> <span id="outStok"></span></p>
+        <input type="number" id="jumlahOUT" placeholder="Jumlah Keluar">
+        <div class="modal-action">
+            <button onclick="simpanStockOut()">💾 Simpan</button>
+            <button onclick="tutupStockOut()">❌ Batal</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Daftar Barang Expired -->
+<div id="modalExpired" class="modal">
+    <div class="modal-content" style="max-width: 500px; max-height: 80vh; overflow-y: auto;">
+        <h2>⚠️ Barang Expired / Hampir Expired</h2>
+        <p style="font-size: 13px; color: #666; margin-bottom: 10px;">Menampilkan barang paling mendesak (≤ 1 Bulan / 30 Hari).</p>
+        <div id="tabelExpiredContainer"></div>
+        <div class="modal-action" style="margin-top: 15px;">
+            <button onclick="tutupExpiredBarang()">Tutup</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal MOVE -->
+<div id="modalMove" class="modal">
+    <div class="modal-content">
+        <h2>🔄 Move Barang</h2>
+        <p><b>Barang :</b> <span id="moveNamaBarang"></span></p>
+        <p><b>Lokasi Sekarang :</b> <span id="moveLokasi"></span></p>
+        <input type="text" id="lokasiBaru" placeholder="Lokasi Baru">
+        <div class="modal-action">
+            <button onclick="simpanMove()">💾 Simpan</button>
+            <button onclick="tutupMove()">❌ Batal</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal History -->
+<div id="modalHistory" class="modal">
+    <div class="modal-content">
+        <h2>📄 History Transaksi</h2>
+        <div id="historyTransaksi">Belum ada transaksi</div>
+        <div class="modal-action">
+            <button onclick="tutupHistory()">Tutup</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Daftar Stok Barang -->
+<div id="modalDaftarStok" class="modal">
+    <div class="modal-content" style="max-width: 500px; max-height: 80vh; overflow-y: auto;">
+        <h2>📊 Daftar Stok Barang</h2>
+        <input 
+            type="text" 
+            id="filterStokInput" 
+            oninput="filterTabelStok()" 
+            onkeyup="filterTabelStok()" 
+            placeholder="Cari nama / barcode / SKU..."
+            style="width:100%; padding:10px; margin:10px 0; border-radius:10px; border:1px solid #ccc; box-sizing: border-box;"
+        >
+        <div id="tabelStokContainer" style="margin-top: 10px;"></div>
+        <div class="modal-action" style="margin-top:15px;">
+            <button onclick="tutupDaftarStok()">Tutup</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL SETTING -->
+<div id="modalSetting" class="modal">
+    <div class="modal-content" style="max-width: 450px;">
+        <h2>⚙️ Pengaturan Aplikasi</h2>
+        <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">
+            Akun Aktif: <b id="labelUserLogin">-</b> (<span id="labelRoleUser">-</span>)
+        </p>
+
+        <!-- FITUR KHUSUS ADMIN (DIBATASI UNTUK STAFF) -->
+        <div class="khusus-admin">
+            <!-- Box Import Excel -->
+            <div style="background: #eff6ff; padding: 12px; border-radius: 12px; margin-bottom: 12px; border: 1px solid #dbeafe; text-align: left;">
+                <p style="font-size: 13px; color: #1d4ed8; margin-bottom: 5px;"><b>📤 Import Data dari Excel:</b></p>
+                <input type="file" id="inputExcelFile" accept=".xlsx, .xls" style="display: none;" onchange="prosesImportExcel(event)">
+                <button onclick="document.getElementById('inputExcelFile').click()" style="width: 100%; background: #2563eb; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold;">
+                    📁 Pilih File Excel (.xlsx)
+                </button>
+            </div>
+
+            <!-- Box Download Excel -->
+            <div style="margin-bottom: 15px;">
+                <button onclick="downloadBackupExcel()" style="width: 100%; background: #16a34a; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold;">
+                    📊 Download Laporan Excel (.xlsx)
+                </button>
+            </div>
+        </div>
+
+        <!-- FITUR BISA DIAKSES SEMUA USER (TERMASUK STAFF) -->
+        <!-- Box Pembersihan / Reset Data -->
+        <div style="background: #fef2f2; padding: 12px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #fecaca; text-align: left;">
+            <p style="font-size: 13px; color: #dc2626; margin-bottom: 8px;"><b>⚠️ Pembersihan Data:</b></p>
+            <button onclick="resetHistory()" style="width: 100%; background: #ef4444; color: white; border: none; padding: 9px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px;">
+                🗑️ Hapus Semua Riwayat Transaksi
+            </button>
+        </div>
+
+        <!-- Switch Dark Mode -->
+        <div style="background: #f8fafc; padding: 12px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #e2e8f0; text-align: left; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <b style="font-size: 14px; color: #334155;">🌙 Dark Mode</b>
+                <p style="font-size: 12px; color: #64748b; margin: 2px 0 0 0;">Ubah tampilan menjadi gelap</p>
+            </div>
+            <input type="checkbox" id="toggleDarkMode" onchange="switchDarkMode(this.checked)" style="width: 20px; height: 20px; cursor: pointer;">
+        </div>
+
+        <!-- Tombol Logout -->
+        <button onclick="prosesLogout()" style="width: 100%; background: #475569; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold;">
+            🚪 Logout / Keluar Akun
+        </button>
+        <br><br>
+        <button onclick="tutupSetting()" style="width: 100%; background: #e2e8f0; color: #334155; border: none; padding: 8px; border-radius: 8px; cursor: pointer;">Tutup</button>
+    </div>
+</div>
+
+<!-- Bottom Navigation Bar -->
+<nav class="bottom">
+    <button onclick="window.scrollTo({top: 0, behavior: 'smooth'});">🏠</button>
+    <button onclick="mulaiScan()" title="Scan Barcode">📷</button>
+    <button onclick="document.getElementById('keyword').focus();">🔍</button>
+    <button onclick="bukaSetting()" title="Pengaturan">⚙️</button>
+</nav>
+
+<!-- JS External Libraries & Scripts -->
+<script src="https://unpkg.com/html5-qrcode"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<script src="js/app.js"></script>
+<script src="js/modal.js"></script>
+</body>
+</html>

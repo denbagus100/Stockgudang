@@ -1,0 +1,100 @@
+/* Overlay */
+.modal{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.45);
+    z-index:999;
+    justify-content:center;
+    align-items:center;
+}
+
+/* Box */
+.modal-content{
+
+    background:#fff;
+
+    width:90%;
+    max-width:420px;
+
+    border-radius:18px;
+
+    padding:20px;
+
+    box-shadow:0 15px 40px rgba(0,0,0,.25);
+
+    animation:popup .25s ease-out;
+}
+
+@keyframes popup{
+
+from{
+
+transform:scale(.9);
+
+opacity:0;
+
+}
+
+to{
+
+transform:scale(1);
+
+opacity:1;
+
+}
+
+}
+
+.modal h2{
+
+margin-top:0;
+
+}
+
+.modal input{
+
+width:100%;
+
+padding:12px;
+
+margin:10px 0;
+
+border-radius:10px;
+
+border:1px solid #ccc;
+
+box-sizing:border-box;
+
+}
+
+.modal-action{
+
+display:flex;
+
+gap:10px;
+
+margin-top:15px;
+
+}
+
+.modal-action button{
+
+flex:1;
+
+}
+.modal-action button{
+
+    border:none;
+
+    border-radius:10px;
+
+    padding:12px;
+
+    cursor:pointer;
+
+    font-size:16px;
+
+    font-weight:bold;
+
+}
