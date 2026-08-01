@@ -752,3 +752,45 @@ function pilihBarangDariTabel(barcode) {
         tampilkanDetailBarang(barang);
     }
 }
+// ==========================================================
+// DUKUNGAN SCANNER LASER HHT (ENTER OTOMATIS)
+// ==========================================================
+document.addEventListener("DOMContentLoaded", function () {
+    // 1. Enter di Pencarian Utama
+    pasangHHTEnter("keyword", function () {
+        cariBarang();
+    });
+
+    // 2. Enter di Barcode Tambah Barang -> Lompat ke Input Nama
+    pasangHHTEnter("tambahBarcode", function () {
+        const elNama = document.getElementById("tambahNama");
+        if (elNama) elNama.focus();
+    });
+
+    // 3. Enter di Jumlah Stock IN -> Simpan Otomatis
+    pasangHHTEnter("jumlahIN", function () {
+        simpanStockIn();
+    });
+
+    // 4. Enter di Jumlah Stock OUT -> Simpan Otomatis
+    pasangHHTEnter("jumlahOUT", function () {
+        simpanStockOut();
+    });
+
+    // 5. Enter di Input Lokasi Baru (Move) -> Simpan Otomatis
+    pasangHHTEnter("lokasiBaru", function () {
+        simpanMove();
+    });
+});
+
+function pasangHHTEnter(idInput, aksi) {
+    const el = document.getElementById(idInput);
+    if (el) {
+        el.addEventListener("keypress", function (e) {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                aksi();
+            }
+        });
+    }
+}
