@@ -651,3 +651,104 @@ function switchDarkMode(isDark) {
         localStorage.setItem("darkMode", "false");
     }
 }
+// ==========================================================
+// KELOLA HALAMAN DAFTAR STOK BARANG
+// ==========================================================
+
+// 1. Membuka Halaman Daftar Stok & Render Data
+function bukaDaftarStok() {
+    const elModal = document.getElementById("modalDaftarStok");
+    if (elModal) elModal.style.display = "flex";
+    
+    // Reset pencarian & render tabel
+    const elInput = document.getElementById("filterStokInput");
+    if (elInput) elInput.value = "";
+    
+    renderTabelStok(daftarBarang);
+}
+
+// 2. Menutup Halaman Daftar Stok
+function tutupDaftarStok() {
+    const elModal = document.getElementById("modalDaftarStok");
+    if (elModal) elModal.style.display = "none";
+}
+
+// 3. Render Tabel Stok Ke Layar
+function renderTabelStok(dataList) {
+    const container = document.getElementById("tabelStokContainer");
+    if (!container) return;
+
+    if (!dataList || dataList.length === 0) {
+        container.innerHTML = `<div style="text-align: center; color: #64748b; padding: 20px;">Barang tidak ditemukan.</div>`;
+        return;
+    }
+
+    // Tampilkan maksimal 100 barang pertama saat pencarian agar loading cepat
+    const dataTampil = dataList.slice(0, 100);
+
+    let html = `
+        <div style="font-size: 12px; color: #64748b; margin-bottom: 8px;">
+            Menampilkan <b>${dataTampil.length}</b> dari <b>${dataList.length}</b> barang.
+        </div>
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
+            <thead>
+                <tr style="background: #e2e8f0; color: #334155;">
+                    <th style="padding: 8px; border-radius: 6px 0 0 6px;">Barang</th>
+                    <th style="padding: 8px; text-align: center;">Stok</th>
+                    <th style="padding: 8px; border-radius: 0 6px 6px 0; text-align: center;">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    dataTampil.forEach(item => {
+        html += `
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+                <td style="padding: 10px 8px;">
+                    <b>${item.nama}</b><br>
+                    <small style="color: #64748b;">BC: ${item.barcode} | SKU: ${item.sku || '-'}</small>
+                </td>
+                <td style="padding: 10px 8px; text-align: center;">
+                    <span style="background: #dbeafe; color: #1e40af; padding: 4px 8px; border-radius: 6px; font-weight: bold;">
+                        ${item.stok}
+                    </span>
+                </td>
+                <td style="padding: 10px 8px; text-align: center;">
+                    <button onclick="pilihBarangDariTabel('${item.barcode}')" style="background: #2563eb; color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;">
+                        Pilih
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+
+    html += `</tbody></table>`;
+    container.innerHTML = html;
+}
+
+// 4. Filter Pencarian Real-Time
+function filterTabelStok() {
+    const key = document.getElementById("filterStokInput").value.trim().toLowerCase();
+    
+    if (key === "") {
+        renderTabelStok(daftarBarang);
+        return;
+    }
+
+    const hasilFilter = daftarBarang.filter(item => 
+        (item.nama && item.nama.toLowerCase().includes(key)) ||
+        (item.barcode && String(item.barcode).toLowerCase().includes(key)) ||
+        (item.sku && String(item.sku).toLowerCase().includes(key))
+    );
+
+    renderTabelStok(hasilFilter);
+}
+
+// 5. Pilih Barang dari Tabel dan Buka Detailnya
+function pilihBarangDariTabel(barcode) {
+    const barang = daftarBarang.find(b => String(b.barcode) === String(barcode));
+    if (barang) {
+        tutupDaftarStok();
+        tampilkanDetailBarang(barang);
+    }
+}
