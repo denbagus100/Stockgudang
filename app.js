@@ -625,3 +625,31 @@ function simpanBarangBaru() {
         tampilkanDetailBarang(barangBaru);
     }
 }
+// ==========================================================
+// SCAN BARCODE KHUSUS FORM TAMBAH BARANG BARU
+// ==========================================================
+function scanUntukTambahBarang() {
+    const elModalScan = document.getElementById("modalScan");
+    if (elModalScan) elModalScan.style.display = "flex";
+
+    if (!html5QrCode) {
+        html5QrCode = new Html5Qrcode("reader");
+    }
+
+    html5QrCode.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 220, height: 220 } },
+        function (decodedText) {
+            if (typeof beep === "function") beep();
+            tutupScan();
+
+            const inputBarcode = document.getElementById("tambahBarcode");
+            if (inputBarcode) inputBarcode.value = decodedText;
+        },
+        function (error) {}
+    ).catch(err => {
+        console.error("Gagal membuka kamera:", err);
+        alert("📷 Tidak dapat mengakses kamera. Pastikan izin kamera sudah diberikan!");
+        tutupScan();
+    });
+}
