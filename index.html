@@ -36,17 +36,17 @@
     </div>
 </div>
 
+<!-- PEMBUNGKUS UTAMA APLIKASI (SEMBUNYI SAAT AWAL REFRESH KARENA STYLE DISPLAY NONE) -->
+<div id="mainApp" style="display: none;">
 
-
-<header class="topbar">
-    <h2>📦 Stock Gudang</h2>
-    <span id="tanggal"></span>
-</header>
-    
-
-    <div class="search-box">
-        <input type="text" id="keyword" placeholder="Cari Barcode / SKU / Nama Barang">
-        <button onclick="cariBarang()">🔍 Cari</button>
+    <header class="topbar">
+        <h2>📦 Stock Gudang</h2>
+        <span id="tanggal"></span>
+    </header>
+        
+    <div class="search-box" style="margin-top: 16px; padding: 0 16px; display: flex; gap: 8px;">
+    <input type="text" id="keyword" placeholder="Cari Barcode / SKU / Nama Barang" style="flex: 1;">
+    <button onclick="cariBarang()">🔍 Cari</button>
     </div>
 
     <div class="info-card">
@@ -58,14 +58,39 @@
         <h3>Barang Hampir Expired</h3>
         <h1 id="expired">0</h1>
     </div>
-</div>
 
-<div class="grid-menu">
-    <button onclick="bukaDaftarStok()">📊<br>Stok</button>
-    <button onclick="bukaExpiredBarang()">⚠️<br>Expired</button>
-    <button onclick="bukaHistory()">📄<br>History</button>
-    <button onclick="bukaTambahBarang()">➕<br>Tambah Barang</button>
-</div>
+    <div class="grid-menu">
+        <button onclick="bukaDaftarStok()">📊<br>Stok</button>
+        <button onclick="bukaExpiredBarang()">⚠️<br>Expired</button>
+        <button onclick="bukaHistory()">📄<br>History</button>
+        <button onclick="bukaTambahBarang()">➕<br>Tambah Barang</button>
+    </div>
+
+    <!-- Box Kelola User (Khusus Admin) -->
+    <div class="khusus-admin" style="background: #f0fdf4; padding: 12px; border-radius: 12px; margin: 12px 0; border: 1px solid #bbf7d0; text-align: left;">
+        <p style="font-size: 13px; color: #166534; margin-bottom: 8px;"><b>👤 Kelola Akun & NIK:</b></p>
+        <div style="display: flex; gap: 8px;">
+            <button type="button" onclick="tambahUserBaruPrompt()" style="flex: 1; background: #16a34a; color: white; border: none; padding: 9px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px;">
+                ➕ Tambah NIK
+            </button>
+            <button type="button" onclick="kelolaDanHapusUser()" style="flex: 1; background: #dc2626; color: white; border: none; padding: 9px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px;">
+                🗑️ Hapus NIK
+            </button>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="bottom">
+        <button onclick="window.scrollTo({top: 0, behavior: 'smooth'});">🏠</button>
+        <button onclick="mulaiScan()" title="Scan Barcode">📷</button>
+        <button onclick="document.getElementById('keyword').focus();">🔍</button>
+        <button onclick="bukaSetting()" title="Pengaturan">⚙️</button>
+    </nav>
+
+</div> <!-- AKHIR DARI mainApp -->
+
+
+<!-- MODAL-MODAL POPUP -->
 
 <!-- Modal Tambah Barang Baru -->
 <div id="modalTambahBarang" class="modal">
@@ -112,19 +137,6 @@
         </div>
     </div>
 </div>
-<!-- Box Kelola User (Khusus Admin) -->
-<div class="khusus-admin" style="background: #f0fdf4; padding: 12px; border-radius: 12px; margin-bottom: 12px; border: 1px solid #bbf7d0; text-align: left;">
-    <p style="font-size: 13px; color: #166534; margin-bottom: 8px;"><b>👤 Kelola Akun & NIK:</b></p>
-    <div style="display: flex; gap: 8px;">
-        <button type="button" onclick="tambahUserBaruPrompt()" style="flex: 1; background: #16a34a; color: white; border: none; padding: 9px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px;">
-            ➕ Tambah NIK
-        </button>
-        <button type="button" onclick="kelolaDanHapusUser()" style="flex: 1; background: #dc2626; color: white; border: none; padding: 9px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px;">
-            🗑️ Hapus NIK
-        </button>
-    </div>
-</div>
-
 
 <!-- Modal Pop-Up Scanner Barcode -->
 <div id="modalScan" class="modal">
@@ -293,14 +305,6 @@
         <button onclick="tutupSetting()" style="width: 100%; background: #e2e8f0; color: #334155; border: none; padding: 8px; border-radius: 8px; cursor: pointer;">Tutup</button>
     </div>
 </div>
-
-<!-- Bottom Navigation Bar -->
-<nav class="bottom">
-    <button onclick="window.scrollTo({top: 0, behavior: 'smooth'});">🏠</button>
-    <button onclick="mulaiScan()" title="Scan Barcode">📷</button>
-    <button onclick="document.getElementById('keyword').focus();">🔍</button>
-    <button onclick="bukaSetting()" title="Pengaturan">⚙️</button>
-</nav>
 
 <!-- JS External Libraries & Scripts -->
 <script src="https://unpkg.com/html5-qrcode"></script>
