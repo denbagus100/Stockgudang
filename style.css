@@ -388,3 +388,11 @@ body.dark-mode .rak-nama {
 body.dark-mode .checkbox-container {
     color: #cbd5e1 !important;
 }
+/* Pastikan Select Input Bisa Diklik di Semua Perangkat */
+select {
+    -webkit-appearance: listbox !important;
+    appearance: auto !important;
+    pointer-events: auto !important;
+    user-select: auto !important;
+    touch-action: manipulation;
+}
