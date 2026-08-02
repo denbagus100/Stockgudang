@@ -1,39 +1,22 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" style="background-color: #f5f7fb;">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stock Gudang</title>
 
-    <script>
-        (function() {
-            try {
-                var user = localStorage.getItem("userAktifInfo");
-                if (user && JSON.parse(user).nik) {
-                    // Jika sudah login, set background dashboard secara instan
-                    document.documentElement.style.backgroundColor = "#f5f7fb";
-                } else {
-                    // Jika belum login, set background login secara instan
-                    document.documentElement.style.backgroundColor = "#0f172a";
-                }
-            } catch (e) {
-                document.documentElement.style.backgroundColor = "#0f172a";
-            }
-        })();
-    </script>
-
     <style>
         html, body {
+            background-color: #f5f7fb !important;
             margin: 0;
             padding: 0;
             width: 100%;
             height: 100%;
             overflow-x: hidden;
         }
-        /* Sembunyikan sejenak sampai DOM siap untuk transisi super halus */
         body {
             opacity: 0;
-            transition: opacity 0.1s ease-in-out;
+            transition: opacity 0.12s ease-in-out;
         }
         body.ready {
             opacity: 1;
@@ -43,7 +26,7 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="modal.css">
 </head>
-<body>
+<body style="background-color: #f5f7fb;">
 
 
 <div id="halamanLogin" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0f172a; display: none; align-items: center; justify-content: center; z-index: 99999;">
