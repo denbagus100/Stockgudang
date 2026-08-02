@@ -77,23 +77,31 @@ function getDatabaseUser() {
     }
     return JSON.parse(data);
 }
+
 function cekStatusLogin() {
     const elHalamanLogin = document.getElementById("halamanLogin");
     const elMainApp = document.getElementById("mainApp");
+    const elNetworkBanner = document.getElementById("networkBanner");
 
     if (userAktifInfo && userAktifInfo.nik) {
+        // SUDAH LOGIN
         if (elHalamanLogin) elHalamanLogin.style.display = "none";
         if (elMainApp) elMainApp.style.display = "block";
-        document.body.style.backgroundColor = "#f5f7fb"; // Warna latar dashboard
+        if (elNetworkBanner) elNetworkBanner.style.display = "flex"; // Tampilkan banner sinyal di dashboard
+        document.body.style.backgroundColor = "#f5f7fb";
         userAktif = userAktifInfo.nama || userAktifInfo.nik;
         terapkanAksesRole();
     } else {
+        // BELUM LOGIN
         if (elMainApp) elMainApp.style.display = "none";
         if (elHalamanLogin) elHalamanLogin.style.display = "flex";
-        document.body.style.backgroundColor = "#0f172a"; // Warna latar login
+        if (elNetworkBanner) elNetworkBanner.style.display = "none"; // Sembunyikan banner sinyal di login
+        document.body.style.backgroundColor = "#0f172a";
     }
-}
 
+    // Munculkan layar halus (Zero Flicker)
+    document.body.classList.add("ready");
+}
 
 function muatNikTersimpan() {
     const savedNik = localStorage.getItem("saved_nik");
