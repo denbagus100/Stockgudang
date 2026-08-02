@@ -1,111 +1,81 @@
-/* Overlay */
-.modal{
-    display:none;
-    position:fixed;
-    inset:0;
-    background:rgba(0,0,0,.45);
-    z-index:999;
-    justify-content:center;
-    align-items:center;
+/* ==========================================================
+   1. MODAL BISA / STANDAR OVERLAY & BOX
+   ========================================================== */
+.modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .5);
+    z-index: 999;
+    justify-content: center;
+    align-items: center;
+    padding: 16px;
+    box-sizing: border-box;
 }
 
-/* Box */
-.modal-content{
-
-    background:#fff;
-
-    width:90%;
-    max-width:420px;
-
-    border-radius:18px;
-
-    padding:20px;
-
-    box-shadow:0 15px 40px rgba(0,0,0,.25);
-
-    animation:popup .25s ease-out;
+.modal-content {
+    background: #ffffff;
+    width: 90%;
+    max-width: 420px;
+    border-radius: 18px;
+    padding: 20px;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, .25);
+    animation: popup .25s ease-out;
 }
 
-@keyframes popup{
-
-from{
-
-transform:scale(.9);
-
-opacity:0;
-
+@keyframes popup {
+    from {
+        transform: scale(.9);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 
-to{
-
-transform:scale(1);
-
-opacity:1;
-
+.modal h2 {
+    margin-top: 0;
+    color: #1e293b;
 }
 
+.modal input {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+    font-size: 14px;
 }
 
-.modal h2{
-
-margin-top:0;
-
+.modal-action {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
 }
 
-.modal input{
-
-width:100%;
-
-padding:12px;
-
-margin:10px 0;
-
-border-radius:10px;
-
-border:1px solid #ccc;
-
-box-sizing:border-box;
-
+.modal-action button {
+    flex: 1;
+    border: none;
+    border-radius: 10px;
+    padding: 12px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: bold;
+    -webkit-tap-highlight-color: transparent;
 }
 
-.modal-action{
-
-display:flex;
-
-gap:10px;
-
-margin-top:15px;
-
-}
-
-.modal-action button{
-
-flex:1;
-
-}
-.modal-action button{
-
-    border:none;
-
-    border-radius:10px;
-
-    padding:12px;
-
-    cursor:pointer;
-
-    font-size:16px;
-
-    font-weight:bold;
-
-}
-/* Modal Container Melayang di Atas Layar */
+/* ==========================================================
+   2. CUSTOM MODAL ADMIN (CONTACT ADMIN VIA WA)
+   ========================================================== */
 .custom-modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
-    background-color: rgba(0, 0, 0, 0.5); /* Latar belakang gelap transparan */
+    background-color: rgba(0, 0, 0, 0.5);
     display: none;
     justify-content: center;
     align-items: center;
@@ -114,7 +84,6 @@ flex:1;
     box-sizing: border-box;
 }
 
-/* Kartu Pop-Up Modal */
 .modal-content-card {
     background: #ffffff;
     border-radius: 16px;
@@ -123,6 +92,7 @@ flex:1;
     padding: 20px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
     text-align: center;
+    animation: popup .25s ease-out;
 }
 
 .modal-header {
@@ -144,6 +114,7 @@ flex:1;
     font-size: 1.5rem;
     cursor: pointer;
     color: #64748b;
+    line-height: 1;
 }
 
 .btn-wa-direct {
@@ -159,6 +130,11 @@ flex:1;
     font-size: 1rem;
     margin: 16px 0;
     box-shadow: 0 4px 10px rgba(37, 211, 102, 0.3);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.btn-wa-direct:active {
+    transform: scale(0.98);
 }
 
 .btn-secondary {
@@ -169,4 +145,29 @@ flex:1;
     border-radius: 8px;
     font-weight: 600;
     cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* ==========================================================
+   3. DARK MODE STYLES FOR MODALS
+   ========================================================== */
+body.dark-mode .modal-content,
+body.dark-mode .modal-content-card {
+    background-color: #1e1e1e !important;
+    color: #ffffff !important;
+    border: 1px solid #333333;
+}
+
+body.dark-mode .modal h2,
+body.dark-mode .modal-header h3 {
+    color: #ffffff !important;
+}
+
+body.dark-mode .btn-close-x {
+    color: #94a3b8 !important;
+}
+
+body.dark-mode .btn-secondary {
+    background-color: #334155 !important;
+    color: #f1f5f9 !important;
 }
