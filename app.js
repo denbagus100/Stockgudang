@@ -847,136 +847,135 @@ function resetHistory() {
     }
 }
 // ============================================================
-// LOGIKA MULTI-RAK (BREAKDOWN PER LOKASI & BARIS)
+// LOGIKA PARSING & PISAH MULTI-RAK (AUTO-SPLIT KOMA)
 // ============================================================
 
 /**
- * Mendapatkan total stok barang dari semua rak
+ * Fungsi Pintar untuk Memisah Rak Gabungan (seperti "A, B" -> ["A", "B"])
  */
-function hitungTotalStokBarang(barang) {
+function dapatkanListRak(barang) {
+    if (!barang) return [];
+
+    // 1. Jika sudah ada detailRak berupa Array dan berisi data valid
     if (Array.isArray(barang.detailRak) && barang.detailRak.length > 0) {
-        return barang.detailRak.reduce((acc, curr) => acc + Number(curr.qty), 0);
+        return barang.detailRak;
     }
-    return Number(barang.stok || 0);
+
+    // 2. Jika lokasi berupa teks koma (contoh: "A, B" atau "Rak 1, Rak 2")
+    if (barang.lokasi && barang.lokasi !== "-") {
+        const pisahRak = barang.lokasi.split(",").map(r => r.trim()).filter(r => r !== "");
+        
+        if (pisahRak.length > 1) {
+            // Bagi stok secara merata atau tempatkan di rak pertama jika dipisah otomatis
+            const stokPerRak = Math.floor(Number(barang.stok || 0) / pisahRak.length);
+            const sisa = Number(barang.stok || 0) % pisahRak.length;
+
+            barang.detailRak = pisahRak.map((namaRak, idx) => ({
+                rak: namaRak,
+                qty: idx === 0 ? stokPerRak + sisa : stokPerRak
+            }));
+            return barang.detailRak;
+        } else if (pisahRak.length === 1) {
+            barang.detailRak = [{ rak: pisahRak[0], qty: Number(barang.stok || 0) }];
+            return barang.detailRak;
+        }
+    }
+
+    // Default jika belum ada lokasi
+    barang.detailRak = [{ rak: "Utama / Transit", qty: Number(barang.stok || 0) }];
+    return barang.detailRak;
 }
 
 /**
- * Tampilkan Rincian Rak per Baris di Card Detail Barang
+ * Render List Rak per Baris Terpisah di Card Detail Barang
  */
 function renderDetailRak(barang) {
     const container = document.getElementById("rakDetailContainer");
     if (!container) return;
 
-    // Normalisasi data rak lama/baru
-    let listRak = Array.isArray(barang.detailRak) ? barang.detailRak : [];
-    if (listRak.length === 0 && barang.lokasi) {
-        listRak = [{ rak: barang.lokasi, qty: Number(barang.stok || 0) }];
-    }
+    const listRak = dapatkanListRak(barang);
 
     let html = `
         <div class="rak-list-container" style="margin-top: 12px; background: #f8fafc; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0;">
-            <div style="font-size: 0.85rem; font-weight: bold; color: #475569; margin-bottom: 8px; display: flex; justify-content: space-between;">
+            <div style="font-size: 0.85rem; font-weight: bold; color: #475569; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
                 <span>📍 Lokasi Rak & Rincian Stok:</span>
-                <button type="button" onclick="tambahBarisRakBaru()" style="background: #2563eb; color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">+ Tambah Rak</button>
+                <button type="button" onclick="tambahBarisRakBaru()" style="background: #2563eb; color: white; border: none; padding: 4px 8px; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: bold;">+ Tambah Rak</button>
             </div>
     `;
 
-    if (listRak.length === 0) {
-        html += `<div style="font-size: 12px; color: #94a3b8; text-align: center; padding: 6px;">Belum ada lokasi rak terdaftar.</div>`;
-    } else {
-        listRak.forEach((item, idx) => {
-            html += `
-                <div class="rak-item" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed #cbd5e1;">
-                    <span style="font-weight: 600; font-size: 13px; color: #334155;">📦 ${item.rak}</span>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <span style="background: #dbeafe; color: #1e40af; padding: 2px 8px; border-radius: 6px; font-weight: bold; font-size: 12px;">${item.qty} pcs</span>
-                        <button type="button" onclick="hapusBarisRak(${idx})" style="background: #ef4444; color: white; border: none; padding: 2px 6px; border-radius: 4px; font-size: 10px; cursor: pointer;">🗑️</button>
-                    </div>
+    listRak.forEach((item, idx) => {
+        html += `
+            <div class="rak-item" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed #cbd5e1;">
+                <span style="font-weight: 600; font-size: 13px; color: #334155;">📦 Rak ${item.rak}</span>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="background: #dbeafe; color: #1e40af; padding: 2px 8px; border-radius: 6px; font-weight: bold; font-size: 12px;">${item.qty} pcs</span>
+                    <button type="button" onclick="hapusBarisRak(${idx})" style="background: #ef4444; color: white; border: none; padding: 2px 6px; border-radius: 4px; font-size: 10px; cursor: pointer;">🗑️</button>
                 </div>
-            `;
-        });
-    }
+            </div>
+        `;
+    });
 
     html += `</div>`;
     container.innerHTML = html;
 }
 
-// Tambah Rak Baru Secara Langsung
+/**
+ * Mengisi Dropdown Opsi Rak (Tergantung Pilihan Rak A, B, dll)
+ */
+function isiDropdownPilihanRak(selectElemId) {
+    const elSelect = document.getElementById(selectElemId);
+    if (!elSelect || !barangAktif) return;
+
+    const listRak = dapatkanListRak(barangAktif);
+
+    let optionsHtml = listRak.map(r => `<option value="${r.rak}">Rak ${r.rak} (Stok: ${r.qty} pcs)</option>`).join("");
+    elSelect.innerHTML = optionsHtml;
+}
+
+// Tambah Rak Baru
 function tambahBarisRakBaru() {
     if (!barangAktif) return;
     
-    const rakBaru = prompt("Masukkan Nama Rak Baru (Contoh: Rak B-04):");
+    const rakBaru = prompt("Masukkan Nama Rak Baru (Contoh: B atau Rak C-02):");
     if (!rakBaru || !rakBaru.trim()) return;
 
-    if (!Array.isArray(barangAktif.detailRak)) {
-        barangAktif.detailRak = barangAktif.lokasi ? [{ rak: barangAktif.lokasi, qty: Number(barangAktif.stok || 0) }] : [];
-    }
+    const listRak = dapatkanListRak(barangAktif);
 
-    const eksis = barangAktif.detailRak.find(r => r.rak.toLowerCase() === rakBaru.trim().toLowerCase());
+    const eksis = listRak.find(r => r.rak.toLowerCase() === rakBaru.trim().toLowerCase());
     if (eksis) return alert("⚠️ Rak ini sudah ada dalam daftar!");
 
-    const qtyAwal = Number(prompt("Masukkan Jumlah Stok di Rak Ini:", "0")) || 0;
+    const qtyAwal = Number(prompt(`Masukkan Jumlah Stok awal di Rak ${rakBaru.trim()}:`, "0")) || 0;
 
     barangAktif.detailRak.push({ rak: rakBaru.trim(), qty: qtyAwal });
-    barangAktif.stok = hitungTotalStokBarang(barangAktif);
+    barangAktif.stok = barangAktif.detailRak.reduce((acc, curr) => acc + Number(curr.qty), 0);
     barangAktif.lokasi = barangAktif.detailRak.map(r => r.rak).join(", ");
 
-    // Simpan Perubahan
+    // Simpan Ke Storage
     localStorage.setItem("daftarBarang", JSON.stringify(daftarBarang));
-    syncKeGoogleSheet();
+    if (typeof syncKeGoogleSheet === "function") syncKeGoogleSheet();
+    
     tampilkanDetailBarang(barangAktif);
     alert(`✅ Rak ${rakBaru.trim()} berhasil ditambahkan!`);
 }
 
 // Hapus Baris Rak
 function hapusBarisRak(index) {
-    if (!barangAktif || !Array.isArray(barangAktif.detailRak)) return;
-    
-    const item = barangAktif.detailRak[index];
-    if (confirm(`Apakah Anda yakin ingin menghapus rak "${item.rak}"?`)) {
+    if (!barangAktif) return;
+    const listRak = dapatkanListRak(barangAktif);
+
+    if (listRak.length <= 1) {
+        return alert("⚠️ Minimal harus ada 1 lokasi rak!");
+    }
+
+    const item = listRak[index];
+    if (confirm(`Apakah Anda yakin ingin menghapus Rak "${item.rak}"?`)) {
         barangAktif.detailRak.splice(index, 1);
-        barangAktif.stok = hitungTotalStokBarang(barangAktif);
+        barangAktif.stok = barangAktif.detailRak.reduce((acc, curr) => acc + Number(curr.qty), 0);
         barangAktif.lokasi = barangAktif.detailRak.map(r => r.rak).join(", ");
 
         localStorage.setItem("daftarBarang", JSON.stringify(daftarBarang));
-        syncKeGoogleSheet();
+        if (typeof syncKeGoogleSheet === "function") syncKeGoogleSheet();
+
         tampilkanDetailBarang(barangAktif);
     }
-}
-// Opsi Pilihan Rak untuk Dropdown Stock IN/OUT
-function isiDropdownPilihanRak(selectElemId) {
-    const elSelect = document.getElementById(selectElemId);
-    if (!elSelect || !barangAktif) return;
-
-    let listRak = Array.isArray(barangAktif.detailRak) ? barangAktif.detailRak : [];
-    if (listRak.length === 0 && barangAktif.lokasi) {
-        listRak = [{ rak: barangAktif.lokasi, qty: Number(barangAktif.stok || 0) }];
-    }
-
-    let optionsHtml = listRak.map(r => `<option value="${r.rak}">${r.rak} (Stok: ${r.qty} pcs)</option>`).join("");
-    if (listRak.length === 0) {
-        optionsHtml = `<option value="Umum">Umum / Rak Utama</option>`;
-    }
-    elSelect.innerHTML = optionsHtml;
-}
-
-// Update Panggilan Buka Modal
-function bukaStockIn() {
-    if (!barangAktif) return alert("Pilih barang terlebih dahulu.");
-    document.getElementById("inNamaBarang").innerText = barangAktif.nama;
-    document.getElementById("inBarcode").innerText = barangAktif.barcode;
-    document.getElementById("inStok").innerText = barangAktif.stok;
-    
-    isiDropdownPilihanRak("selectRakIN");
-    document.getElementById("modalStockIn").style.display = "flex";
-}
-
-function bukaStockOut() {
-    if (!barangAktif) return alert("Pilih barang terlebih dahulu.");
-    document.getElementById("outNamaBarang").innerText = barangAktif.nama;
-    document.getElementById("outBarcode").innerText = barangAktif.barcode;
-    document.getElementById("outStok").innerText = barangAktif.stok;
-
-    isiDropdownPilihanRak("selectRakOUT");
-    document.getElementById("modalStockOut").style.display = "flex";
 }
