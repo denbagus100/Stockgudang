@@ -15,6 +15,7 @@ const API_SECRET_TOKEN = "WMS_SECRET_TOKEN_2026_SECURE";
 let barangAktif = null;
 let html5QrCode = null; // Scanner Kamera
 let historyScan = [];
+let targetSelectRakId = null; // Temporary ID untuk target scan barcode rak
 
 // Storage Data
 let daftarBarang = JSON.parse(localStorage.getItem("daftarBarang")) || [];
@@ -59,7 +60,7 @@ document.addEventListener("DOMContentLoaded", function () {
     pasangHHTEnter("tambahBarcode", () => document.getElementById("tambahNama")?.focus());
     pasangHHTEnter("jumlahIN", simpanStockIn);
     pasangHHTEnter("jumlahOUT", simpanStockOut);
-    pasangHHTEnter("lokasiBaru", simpanMove);
+    pasangHHTEnter("jumlahMove", simpanMoveBarang);
 });
 
 window.addEventListener('online', updateStatusJaringan);
@@ -104,7 +105,6 @@ function cekStatusLogin() {
     // Munculkan layar secara instan & mulus
     document.body.classList.add("ready");
 }
-
 
 function muatNikTersimpan() {
     const savedNik = localStorage.getItem("saved_nik");
@@ -325,7 +325,142 @@ function updateDashboardStats() {
 }
 
 // ==========================================================
-// 4. OPERASI TRANSAKSI (STOCK IN, OUT, MOVE)
+// 4. LOGIKA MULTI-RAK (AUTO-SPLIT KOMA & PEMBAGIAN STOK)
+// ==========================================================
+
+/**
+ * Memisah Lokasi Teks Koma (misal: "A, B") menjadi List Rak Individual
+ */
+function dapatkanListRak(barang) {
+    if (!barang) return [];
+
+    if (Array.isArray(barang.detailRak) && barang.detailRak.length > 0) {
+        return barang.detailRak;
+    }
+
+    if (barang.lokasi && barang.lokasi !== "-") {
+        const pisahRak = barang.lokasi.split(",").map(r => r.trim()).filter(r => r !== "");
+        
+        if (pisahRak.length > 1) {
+            const stokPerRak = Math.floor(Number(barang.stok || 0) / pisahRak.length);
+            const sisa = Number(barang.stok || 0) % pisahRak.length;
+
+            barang.detailRak = pisahRak.map((namaRak, idx) => ({
+                rak: namaRak,
+                qty: idx === 0 ? stokPerRak + sisa : stokPerRak
+            }));
+            return barang.detailRak;
+        } else if (pisahRak.length === 1) {
+            barang.detailRak = [{ rak: pisahRak[0], qty: Number(barang.stok || 0) }];
+            return barang.detailRak;
+        }
+    }
+
+    barang.detailRak = [{ rak: "Utama / Transit", qty: Number(barang.stok || 0) }];
+    return barang.detailRak;
+}
+
+/**
+ * Render Rincian Rak Per Baris di Card Detail Barang
+ */
+function renderDetailRak(barang) {
+    const container = document.getElementById("rakDetailContainer");
+    if (!container) return;
+
+    const listRak = dapatkanListRak(barang);
+
+    let html = `
+        <div class="rak-list-container" style="margin-top: 12px; background: #f8fafc; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0;">
+            <div style="font-size: 0.85rem; font-weight: bold; color: #475569; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                <span>📍 Lokasi Rak & Rincian Stok:</span>
+                <button type="button" onclick="tambahBarisRakBaru()" style="background: #2563eb; color: white; border: none; padding: 4px 8px; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: bold;">+ Tambah Rak</button>
+            </div>
+    `;
+
+    listRak.forEach((item, idx) => {
+        html += `
+            <div class="rak-item" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed #cbd5e1;">
+                <span style="font-weight: 600; font-size: 13px; color: #334155;">📦 Rak ${item.rak}</span>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="background: #dbeafe; color: #1e40af; padding: 2px 8px; border-radius: 6px; font-weight: bold; font-size: 12px;">${item.qty} pcs</span>
+                    <button type="button" onclick="hapusBarisRak(${idx})" style="background: #ef4444; color: white; border: none; padding: 2px 6px; border-radius: 4px; font-size: 10px; cursor: pointer;">🗑️</button>
+                </div>
+            </div>
+        `;
+    });
+
+    html += `</div>`;
+    container.innerHTML = html;
+}
+
+/**
+ * Mengisi Dropdown Pilihan Rak
+ */
+function isiDropdownPilihanRak(selectElemId) {
+    const elSelect = document.getElementById(selectElemId);
+    if (!elSelect || !barangAktif) return;
+
+    const listRak = dapatkanListRak(barangAktif);
+
+    if (!listRak || listRak.length === 0) {
+        elSelect.innerHTML = `<option value="Utama / Transit">Rak Utama (Stok: ${barangAktif.stok || 0} pcs)</option>`;
+        return;
+    }
+
+    let optionsHtml = listRak.map(r => 
+        `<option value="${r.rak}">Rak ${r.rak} (Stok: ${r.qty} pcs)</option>`
+    ).join("");
+    
+    elSelect.innerHTML = optionsHtml;
+}
+
+function tambahBarisRakBaru() {
+    if (!barangAktif) return;
+    
+    const rakBaru = prompt("Masukkan Nama Rak Baru (Contoh: B atau Rak C-02):");
+    if (!rakBaru || !rakBaru.trim()) return;
+
+    const listRak = dapatkanListRak(barangAktif);
+
+    const eksis = listRak.find(r => r.rak.toLowerCase() === rakBaru.trim().toLowerCase());
+    if (eksis) return alert("⚠️ Rak ini sudah ada dalam daftar!");
+
+    const qtyAwal = Number(prompt(`Masukkan Jumlah Stok awal di Rak ${rakBaru.trim()}:`, "0")) || 0;
+
+    barangAktif.detailRak.push({ rak: rakBaru.trim(), qty: qtyAwal });
+    barangAktif.stok = barangAktif.detailRak.reduce((acc, curr) => acc + Number(curr.qty), 0);
+    barangAktif.lokasi = barangAktif.detailRak.map(r => r.rak).join(", ");
+
+    localStorage.setItem("daftarBarang", JSON.stringify(daftarBarang));
+    if (typeof syncKeGoogleSheet === "function") syncKeGoogleSheet();
+    
+    tampilkanDetailBarang(barangAktif);
+    alert(`✅ Rak ${rakBaru.trim()} berhasil ditambahkan!`);
+}
+
+function hapusBarisRak(index) {
+    if (!barangAktif) return;
+    const listRak = dapatkanListRak(barangAktif);
+
+    if (listRak.length <= 1) {
+        return alert("⚠️ Minimal harus ada 1 lokasi rak!");
+    }
+
+    const item = listRak[index];
+    if (confirm(`Apakah Anda yakin ingin menghapus Rak "${item.rak}"?`)) {
+        barangAktif.detailRak.splice(index, 1);
+        barangAktif.stok = barangAktif.detailRak.reduce((acc, curr) => acc + Number(curr.qty), 0);
+        barangAktif.lokasi = barangAktif.detailRak.map(r => r.rak).join(", ");
+
+        localStorage.setItem("daftarBarang", JSON.stringify(daftarBarang));
+        if (typeof syncKeGoogleSheet === "function") syncKeGoogleSheet();
+
+        tampilkanDetailBarang(barangAktif);
+    }
+}
+
+// ==========================================================
+// 5. OPERASI TRANSAKSI (STOCK IN, OUT, MOVE)
 // ==========================================================
 function simpanStockIn() {
     if (!barangAktif) return alert("Scan atau cari barang terlebih dahulu.");
@@ -333,10 +468,19 @@ function simpanStockIn() {
     const jumlah = Number(document.getElementById("jumlahIN").value);
     if (isNaN(jumlah) || jumlah <= 0) return alert("Masukkan jumlah yang benar.");
 
-    barangAktif.stok = Number(barangAktif.stok) + jumlah;
+    const rakTujuan = document.getElementById("selectRakIN")?.value || "Utama / Transit";
+    const listRak = dapatkanListRak(barangAktif);
+    let targetRak = listRak.find(r => r.rak === rakTujuan);
 
-    document.getElementById("stokBarang").innerHTML = barangAktif.stok;
-    document.getElementById("inStok").innerHTML = barangAktif.stok;
+    if (targetRak) {
+        targetRak.qty += jumlah;
+    } else {
+        listRak.push({ rak: rakTujuan, qty: jumlah });
+    }
+
+    barangAktif.detailRak = listRak;
+    barangAktif.stok = listRak.reduce((acc, curr) => acc + Number(curr.qty), 0);
+    barangAktif.lokasi = listRak.map(r => r.rak).join(", ");
 
     const log = {
         waktu: new Date().toLocaleString("id-ID"),
@@ -344,7 +488,8 @@ function simpanStockIn() {
         nama: barangAktif.nama,
         barcode: barangAktif.barcode,
         jumlah: jumlah,
-        user: userAktif
+        user: userAktif,
+        keterangan: `Masuk ke Rak ${rakTujuan}`
     };
 
     historyTransaksi.unshift(log);
@@ -358,13 +503,13 @@ function simpanStockIn() {
         namaBarang: barangAktif.nama,
         jumlah: jumlah,
         user: userAktif,
-        keterangan: "Stok Masuk"
+        keterangan: `Masuk ke Rak ${rakTujuan}`
     });
 
-    if (typeof tampilHistoryTransaksi === "function") tampilHistoryTransaksi();
     tutupStockIn();
+    tampilkanDetailBarang(barangAktif);
     document.getElementById("jumlahIN").value = "";
-    alert("✅ Stock IN berhasil & Data tersimpan!");
+    alert(`✅ Stock IN sebanyak ${jumlah} pcs ke Rak ${rakTujuan} berhasil!`);
 }
 
 function simpanStockOut() {
@@ -372,12 +517,19 @@ function simpanStockOut() {
 
     const jumlah = Number(document.getElementById("jumlahOUT").value);
     if (isNaN(jumlah) || jumlah <= 0) return alert("Masukkan jumlah yang benar.");
-    if (jumlah > Number(barangAktif.stok)) return alert("❌ Stock tidak mencukupi.");
 
-    barangAktif.stok = Number(barangAktif.stok) - jumlah;
+    const rakAsal = document.getElementById("selectRakOUT")?.value || "Utama / Transit";
+    const listRak = dapatkanListRak(barangAktif);
+    let targetRak = listRak.find(r => r.rak === rakAsal);
 
-    document.getElementById("stokBarang").innerHTML = barangAktif.stok;
-    document.getElementById("outStok").innerHTML = barangAktif.stok;
+    if (!targetRak || targetRak.qty < jumlah) {
+        return alert(`❌ Stok di Rak ${rakAsal} tidak mencukupi! (Tersedia: ${targetRak ? targetRak.qty : 0} pcs)`);
+    }
+
+    targetRak.qty -= jumlah;
+    barangAktif.detailRak = listRak;
+    barangAktif.stok = listRak.reduce((acc, curr) => acc + Number(curr.qty), 0);
+    barangAktif.lokasi = listRak.map(r => r.rak).join(", ");
 
     const log = {
         waktu: new Date().toLocaleString("id-ID"),
@@ -385,7 +537,8 @@ function simpanStockOut() {
         nama: barangAktif.nama,
         barcode: barangAktif.barcode,
         jumlah: jumlah,
-        user: userAktif
+        user: userAktif,
+        keterangan: `Keluar dari Rak ${rakAsal}`
     };
 
     historyTransaksi.unshift(log);
@@ -399,34 +552,92 @@ function simpanStockOut() {
         namaBarang: barangAktif.nama,
         jumlah: jumlah,
         user: userAktif,
-        keterangan: "Stok Keluar"
+        keterangan: `Keluar dari Rak ${rakAsal}`
     });
 
-    if (typeof tampilHistoryTransaksi === "function") tampilHistoryTransaksi();
     tutupStockOut();
+    tampilkanDetailBarang(barangAktif);
     document.getElementById("jumlahOUT").value = "";
-    alert("✅ Stock OUT berhasil & Data tersimpan!");
+    alert(`✅ Stock OUT sebanyak ${jumlah} pcs dari Rak ${rakAsal} berhasil!`);
 }
 
-function simpanMove() {
-    if (!barangAktif) return alert("Scan atau cari barang terlebih dahulu.");
+function bukaMoveBarang() {
+    if (!barangAktif) return alert("Pilih barang terlebih dahulu.");
 
-    const lokasiBaru = document.getElementById("lokasiBaru").value.trim();
-    if (lokasiBaru === "") return alert("Masukkan lokasi baru.");
+    document.getElementById("moveNamaBarang").innerText = barangAktif.nama;
+    document.getElementById("moveBarcode").innerText = barangAktif.barcode;
+    document.getElementById("jumlahMove").value = "";
 
-    const lokasiLama = barangAktif.lokasi;
-    barangAktif.lokasi = lokasiBaru;
+    const listRak = dapatkanListRak(barangAktif);
 
-    document.getElementById("lokasiBarang").innerHTML = barangAktif.lokasi;
+    // Isi Dropdown Asal
+    const elAsal = document.getElementById("selectRakMoveAsal");
+    if (elAsal) elAsal.innerHTML = listRak.map(r => `<option value="${r.rak}">Rak ${r.rak} (Stok: ${r.qty} pcs)</option>`).join("");
+
+    // Isi Dropdown Tujuan
+    const elTujuan = document.getElementById("selectRakMoveTujuan");
+    if (elTujuan) {
+        let optionsTujuan = listRak.map(r => `<option value="${r.rak}">Rak ${r.rak}</option>`).join("");
+        optionsTujuan += `<option value="NEW_RAK">+ Buat Rak Tujuan Baru...</option>`;
+        elTujuan.innerHTML = optionsTujuan;
+    }
+
+    document.getElementById("modalMove").style.display = "flex";
+}
+
+function tutupMoveBarang() { 
+    document.getElementById("modalMove").style.display = "none"; 
+}
+
+function simpanMoveBarang() {
+    if (!barangAktif) return;
+
+    const rakAsal = document.getElementById("selectRakMoveAsal").value;
+    let rakTujuan = document.getElementById("selectRakMoveTujuan").value;
+    const qtyPindah = Number(document.getElementById("jumlahMove").value);
+
+    if (!qtyPindah || qtyPindah <= 0) {
+        return alert("⚠️ Masukkan jumlah pcs pindah yang valid!");
+    }
+
+    if (rakTujuan === "NEW_RAK") {
+        const inputBaru = prompt("Masukkan Nama Rak Tujuan Baru (Contoh: B atau C-01):");
+        if (!inputBaru || !inputBaru.trim()) return alert("⚠️ Nama rak tujuan tidak boleh kosong!");
+        rakTujuan = inputBaru.trim();
+    }
+
+    if (rakAsal === rakTujuan) {
+        return alert("⚠️ Rak Asal dan Rak Tujuan tidak boleh sama!");
+    }
+
+    const listRak = dapatkanListRak(barangAktif);
+    const itemAsal = listRak.find(r => r.rak === rakAsal);
+
+    if (!itemAsal || itemAsal.qty < qtyPindah) {
+        return alert(`⚠️ Stok di Rak ${rakAsal} tidak mencukupi! (Stok tersedia: ${itemAsal ? itemAsal.qty : 0} pcs)`);
+    }
+
+    // Process Move
+    itemAsal.qty -= qtyPindah;
+    let itemTujuan = listRak.find(r => r.rak === rakTujuan);
+    if (itemTujuan) {
+        itemTujuan.qty += qtyPindah;
+    } else {
+        listRak.push({ rak: rakTujuan, qty: qtyPindah });
+    }
+
+    barangAktif.detailRak = listRak;
+    barangAktif.stok = listRak.reduce((acc, curr) => acc + Number(curr.qty), 0);
+    barangAktif.lokasi = listRak.map(r => r.rak).join(", ");
 
     const log = {
         waktu: new Date().toLocaleString("id-ID"),
         jenis: "🔄 MOVE",
         nama: barangAktif.nama,
         barcode: barangAktif.barcode,
-        dari: lokasiLama,
-        ke: lokasiBaru,
-        user: userAktif
+        jumlah: qtyPindah,
+        user: userAktif,
+        keterangan: `Pindah dari Rak ${rakAsal} ke Rak ${rakTujuan}`
     };
 
     historyTransaksi.unshift(log);
@@ -438,26 +649,28 @@ function simpanMove() {
         jenis: "MOVE LOCATION",
         barcode: barangAktif.barcode,
         namaBarang: barangAktif.nama,
-        jumlah: 0,
+        jumlah: qtyPindah,
         user: userAktif,
-        keterangan: `Pindah dari ${lokasiLama} ke ${lokasiBaru}`
+        keterangan: `Pindah dari Rak ${rakAsal} ke Rak ${rakTujuan}`
     });
 
-    if (typeof tampilHistoryTransaksi === "function") tampilHistoryTransaksi();
-    tutupMove();
-    document.getElementById("lokasiBaru").value = "";
-    alert("✅ Lokasi berhasil dipindahkan!");
+    tutupMoveBarang();
+    tampilkanDetailBarang(barangAktif);
+    alert(`✅ Berhasil memindahkan ${qtyPindah} pcs dari Rak ${rakAsal} ke Rak ${rakTujuan}!`);
 }
 
 // ==========================================================
-// 5. MODAL POPUP HELPERS
+// 6. MODAL POPUP HELPERS
 // ==========================================================
 function bukaStockIn() {
     if (!barangAktif) return alert("Pilih barang terlebih dahulu.");
     document.getElementById("inNamaBarang").innerText = barangAktif.nama;
     document.getElementById("inBarcode").innerText = barangAktif.barcode;
     document.getElementById("inStok").innerText = barangAktif.stok;
-    document.getElementById("modalStockIn").style.display = "flex";
+    
+    isiDropdownPilihanRak("selectRakIN");
+    const elModal = document.getElementById("modalStockIn");
+    if (elModal) elModal.style.display = "flex";
 }
 function tutupStockIn() { document.getElementById("modalStockIn").style.display = "none"; }
 
@@ -466,17 +679,12 @@ function bukaStockOut() {
     document.getElementById("outNamaBarang").innerText = barangAktif.nama;
     document.getElementById("outBarcode").innerText = barangAktif.barcode;
     document.getElementById("outStok").innerText = barangAktif.stok;
-    document.getElementById("modalStockOut").style.display = "flex";
+
+    isiDropdownPilihanRak("selectRakOUT");
+    const elModal = document.getElementById("modalStockOut");
+    if (elModal) elModal.style.display = "flex";
 }
 function tutupStockOut() { document.getElementById("modalStockOut").style.display = "none"; }
-
-function bukaMove() {
-    if (!barangAktif) return alert("Pilih barang terlebih dahulu.");
-    document.getElementById("moveNamaBarang").innerText = barangAktif.nama;
-    document.getElementById("moveLokasi").innerText = barangAktif.lokasi || "-";
-    document.getElementById("modalMove").style.display = "flex";
-}
-function tutupMove() { document.getElementById("modalMove").style.display = "none"; }
 
 function bukaExpiredBarang() {
     const container = document.getElementById("tabelExpiredContainer");
@@ -517,7 +725,7 @@ function bukaHistory() {
         historyTransaksi.slice(0, 50).forEach(log => {
             html += `<li style='border-bottom:1px solid #cbd5e1; padding:8px 0;'>
                 <b>${log.jenis}</b> - ${log.nama} (${log.jumlah || 0} pcs)<br>
-                <small style='color:#64748b;'>⏱️ ${log.waktu} | 👤 ${log.user}</small>
+                <small style='color:#64748b;'>⏱️ ${log.waktu} | 👤 ${log.user} ${log.keterangan ? '| ' + log.keterangan : ''}</small>
             </li>`;
         });
         html += "</ul>";
@@ -531,7 +739,7 @@ function bukaSetting() { document.getElementById("modalSetting").style.display =
 function tutupSetting() { document.getElementById("modalSetting").style.display = "none"; }
 
 // ==========================================================
-// 6. SCANNER & PENCARIAN BARANG
+// 7. SCANNER & PENCARIAN BARANG
 // ==========================================================
 function mulaiScan() {
     document.getElementById("modalScan").style.display = "flex";
@@ -590,6 +798,49 @@ function scanUntukTambahBarang() {
     });
 }
 
+function scanBarcodeRak(targetElementId) {
+    targetSelectRakId = targetElementId;
+    const elModalScan = document.getElementById("modalScan");
+    if (elModalScan) elModalScan.style.display = "flex";
+
+    if (!html5QrCode) {
+        html5QrCode = new Html5Qrcode("reader");
+    }
+
+    html5QrCode.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 220, height: 220 } },
+        function (decodedText) {
+            beep();
+            tutupScan();
+            pilihAtauBuatOpsiRak(targetSelectRakId, decodedText.trim());
+        },
+        function (error) {}
+    ).catch(err => {
+        alert("📷 Tidak dapat mengakses kamera!");
+        tutupScan();
+    });
+}
+
+function pilihAtauBuatOpsiRak(selectId, namaRak) {
+    const elSelect = document.getElementById(selectId);
+    if (!elSelect) return;
+
+    let opsiAda = Array.from(elSelect.options).find(opt => opt.value.toLowerCase() === namaRak.toLowerCase());
+
+    if (!opsiAda) {
+        const newOption = document.createElement("option");
+        newOption.value = namaRak;
+        newOption.text = `Rak ${namaRak} (Hasil Scan)`;
+        newOption.selected = true;
+        elSelect.add(newOption);
+        alert(`✅ Rak "${namaRak}" terdeteksi dari scan!`);
+    } else {
+        elSelect.value = opsiAda.value;
+        alert(`✅ Dipilih: Rak ${opsiAda.value}`);
+    }
+}
+
 function tutupScan() {
     if (html5QrCode && html5QrCode.isScanning) {
         html5QrCode.stop().then(() => {
@@ -630,41 +881,8 @@ function tampilkanDetailBarang(barang) {
     renderDetailRak(barang);
 }
 
-function renderDetailRak(barang) {
-    const container = document.getElementById("rakDetailContainer");
-    if (!container) return;
-
-    let listRak = [];
-    if (Array.isArray(barang.detailRak)) {
-        listRak = barang.detailRak;
-    } else if (barang.lokasi) {
-        listRak = [{ rak: barang.lokasi, qty: barang.stok }];
-    } else {
-        listRak = [{ rak: "Transit / Belum Ditentukan", qty: barang.stok }];
-    }
-
-    let html = `
-        <div class="rak-list-container">
-            <div style="font-size: 0.85rem; font-weight: bold; color: #64748b; margin-bottom: 6px;">
-                📍 Rincian Stok Per Rak:
-            </div>
-    `;
-
-    listRak.forEach(item => {
-        html += `
-            <div class="rak-item">
-                <span class="rak-nama">📦 ${item.rak}</span>
-                <span class="rak-qty">${item.qty} pcs</span>
-            </div>
-        `;
-    });
-
-    html += `</div>`;
-    container.innerHTML = html;
-}
-
 // ==========================================================
-// 7. KELOLA USER (ADMIN) & TAMBAH BARANG
+// 8. KELOLA USER (ADMIN) & TAMBAH BARANG
 // ==========================================================
 function tambahUserBaruPrompt() {
     if (!userAktifInfo || userAktifInfo.role !== "admin") return alert("⛔ Hanya Admin yang bisa menambah NIK baru.");
@@ -742,7 +960,7 @@ function simpanBarangBaru() {
 }
 
 // ==========================================================
-// 8. DAFTAR STOK BARANG & UTILS
+// 9. DAFTAR STOK BARANG & UTILS
 // ==========================================================
 function bukaDaftarStok() {
     document.getElementById("modalDaftarStok").style.display = "flex";
@@ -819,14 +1037,26 @@ function beep() {
 
 function pasangHHTEnter(idInput, aksi) {
     const el = document.getElementById(idInput);
-    if (el) {
-        el.addEventListener("keypress", function (e) {
-            if (e.key === "Enter") {
-                e.preventDefault();
-                aksi();
-            }
-        });
-    }
+    if (!el) return;
+
+    let timerHHT = null;
+
+    el.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.keyCode === 13) {
+            e.preventDefault();
+            clearTimeout(timerHHT);
+            timerHHT = setTimeout(() => {
+                const nilaiClean = el.value.trim();
+                if (nilaiClean !== "") {
+                    aksi(nilaiClean);
+                }
+            }, 50);
+        }
+    });
+
+    el.addEventListener("focus", function() {
+        this.select();
+    });
 }
 
 function switchDarkMode(isDark) {
@@ -845,176 +1075,4 @@ function resetHistory() {
         localStorage.removeItem("historyTransaksi");
         alert("🗑️ Riwayat transaksi berhasil dibersihkan!");
     }
-}
-// ============================================================
-// LOGIKA PARSING & PISAH MULTI-RAK (AUTO-SPLIT KOMA)
-// ============================================================
-
-/**
- * Fungsi Pintar untuk Memisah Rak Gabungan (seperti "A, B" -> ["A", "B"])
- */
-function dapatkanListRak(barang) {
-    if (!barang) return [];
-
-    // 1. Jika sudah ada detailRak berupa Array dan berisi data valid
-    if (Array.isArray(barang.detailRak) && barang.detailRak.length > 0) {
-        return barang.detailRak;
-    }
-
-    // 2. Jika lokasi berupa teks koma (contoh: "A, B" atau "Rak 1, Rak 2")
-    if (barang.lokasi && barang.lokasi !== "-") {
-        const pisahRak = barang.lokasi.split(",").map(r => r.trim()).filter(r => r !== "");
-        
-        if (pisahRak.length > 1) {
-            // Bagi stok secara merata atau tempatkan di rak pertama jika dipisah otomatis
-            const stokPerRak = Math.floor(Number(barang.stok || 0) / pisahRak.length);
-            const sisa = Number(barang.stok || 0) % pisahRak.length;
-
-            barang.detailRak = pisahRak.map((namaRak, idx) => ({
-                rak: namaRak,
-                qty: idx === 0 ? stokPerRak + sisa : stokPerRak
-            }));
-            return barang.detailRak;
-        } else if (pisahRak.length === 1) {
-            barang.detailRak = [{ rak: pisahRak[0], qty: Number(barang.stok || 0) }];
-            return barang.detailRak;
-        }
-    }
-
-    // Default jika belum ada lokasi
-    barang.detailRak = [{ rak: "Utama / Transit", qty: Number(barang.stok || 0) }];
-    return barang.detailRak;
-}
-
-/**
- * Render List Rak per Baris Terpisah di Card Detail Barang
- */
-function renderDetailRak(barang) {
-    const container = document.getElementById("rakDetailContainer");
-    if (!container) return;
-
-    const listRak = dapatkanListRak(barang);
-
-    let html = `
-        <div class="rak-list-container" style="margin-top: 12px; background: #f8fafc; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0;">
-            <div style="font-size: 0.85rem; font-weight: bold; color: #475569; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
-                <span>📍 Lokasi Rak & Rincian Stok:</span>
-                <button type="button" onclick="tambahBarisRakBaru()" style="background: #2563eb; color: white; border: none; padding: 4px 8px; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: bold;">+ Tambah Rak</button>
-            </div>
-    `;
-
-    listRak.forEach((item, idx) => {
-        html += `
-            <div class="rak-item" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed #cbd5e1;">
-                <span style="font-weight: 600; font-size: 13px; color: #334155;">📦 Rak ${item.rak}</span>
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <span style="background: #dbeafe; color: #1e40af; padding: 2px 8px; border-radius: 6px; font-weight: bold; font-size: 12px;">${item.qty} pcs</span>
-                    <button type="button" onclick="hapusBarisRak(${idx})" style="background: #ef4444; color: white; border: none; padding: 2px 6px; border-radius: 4px; font-size: 10px; cursor: pointer;">🗑️</button>
-                </div>
-            </div>
-        `;
-    });
-
-    html += `</div>`;
-    container.innerHTML = html;
-}
-
-/**
- * Mengisi Dropdown Opsi Rak (Tergantung Pilihan Rak A, B, dll)
- */
-function isiDropdownPilihanRak(selectElemId) {
-    const elSelect = document.getElementById(selectElemId);
-    if (!elSelect || !barangAktif) return;
-
-    const listRak = dapatkanListRak(barangAktif);
-
-    let optionsHtml = listRak.map(r => `<option value="${r.rak}">Rak ${r.rak} (Stok: ${r.qty} pcs)</option>`).join("");
-    elSelect.innerHTML = optionsHtml;
-}
-
-// Tambah Rak Baru
-function tambahBarisRakBaru() {
-    if (!barangAktif) return;
-    
-    const rakBaru = prompt("Masukkan Nama Rak Baru (Contoh: B atau Rak C-02):");
-    if (!rakBaru || !rakBaru.trim()) return;
-
-    const listRak = dapatkanListRak(barangAktif);
-
-    const eksis = listRak.find(r => r.rak.toLowerCase() === rakBaru.trim().toLowerCase());
-    if (eksis) return alert("⚠️ Rak ini sudah ada dalam daftar!");
-
-    const qtyAwal = Number(prompt(`Masukkan Jumlah Stok awal di Rak ${rakBaru.trim()}:`, "0")) || 0;
-
-    barangAktif.detailRak.push({ rak: rakBaru.trim(), qty: qtyAwal });
-    barangAktif.stok = barangAktif.detailRak.reduce((acc, curr) => acc + Number(curr.qty), 0);
-    barangAktif.lokasi = barangAktif.detailRak.map(r => r.rak).join(", ");
-
-    // Simpan Ke Storage
-    localStorage.setItem("daftarBarang", JSON.stringify(daftarBarang));
-    if (typeof syncKeGoogleSheet === "function") syncKeGoogleSheet();
-    
-    tampilkanDetailBarang(barangAktif);
-    alert(`✅ Rak ${rakBaru.trim()} berhasil ditambahkan!`);
-}
-
-// Hapus Baris Rak
-function hapusBarisRak(index) {
-    if (!barangAktif) return;
-    const listRak = dapatkanListRak(barangAktif);
-
-    if (listRak.length <= 1) {
-        return alert("⚠️ Minimal harus ada 1 lokasi rak!");
-    }
-
-    const item = listRak[index];
-    if (confirm(`Apakah Anda yakin ingin menghapus Rak "${item.rak}"?`)) {
-        barangAktif.detailRak.splice(index, 1);
-        barangAktif.stok = barangAktif.detailRak.reduce((acc, curr) => acc + Number(curr.qty), 0);
-        barangAktif.lokasi = barangAktif.detailRak.map(r => r.rak).join(", ");
-
-        localStorage.setItem("daftarBarang", JSON.stringify(daftarBarang));
-        if (typeof syncKeGoogleSheet === "function") syncKeGoogleSheet();
-
-        tampilkanDetailBarang(barangAktif);
-    }
-}
-function isiDropdownPilihanRak(selectElemId) {
-    const elSelect = document.getElementById(selectElemId);
-    if (!elSelect || !barangAktif) return;
-
-    const listRak = dapatkanListRak(barangAktif);
-
-    if (!listRak || listRak.length === 0) {
-        elSelect.innerHTML = `<option value="Umum">Rak Utama (Stok: ${barangAktif.stok || 0} pcs)</option>`;
-        return;
-    }
-
-    let optionsHtml = listRak.map(r => 
-        `<option value="${r.rak}">Rak ${r.rak} (Stok: ${r.qty} pcs)</option>`
-    ).join("");
-    
-    elSelect.innerHTML = optionsHtml;
-}
-
-function bukaStockIn() {
-    if (!barangAktif) return alert("Pilih barang terlebih dahulu.");
-    document.getElementById("inNamaBarang").innerText = barangAktif.nama;
-    document.getElementById("inBarcode").innerText = barangAktif.barcode;
-    document.getElementById("inStok").innerText = barangAktif.stok;
-    
-    isiDropdownPilihanRak("selectRakIN");
-    const elModal = document.getElementById("modalStockIn");
-    if (elModal) elModal.style.display = "flex";
-}
-
-function bukaStockOut() {
-    if (!barangAktif) return alert("Pilih barang terlebih dahulu.");
-    document.getElementById("outNamaBarang").innerText = barangAktif.nama;
-    document.getElementById("outBarcode").innerText = barangAktif.barcode;
-    document.getElementById("outStok").innerText = barangAktif.stok;
-
-    isiDropdownPilihanRak("selectRakOUT");
-    const elModal = document.getElementById("modalStockOut");
-    if (elModal) elModal.style.display = "flex";
 }
