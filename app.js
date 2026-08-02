@@ -754,16 +754,13 @@ function jalankanScannerKamera(onSuccessCallback) {
         html5QrCode = new Html5Qrcode("reader");
     }
 
-    // Ambil daftar semua kamera yang ada di perangkat HHT/HP
     Html5Qrcode.getCameras().then(devices => {
         if (devices && devices.length > 0) {
-            // Cari kamera yang memiliki label 'back', 'rear', 'belakang', atau 'environment'
             let backCamera = devices.find(device => {
                 const label = device.label.toLowerCase();
                 return label.includes("back") || label.includes("rear") || label.includes("belakang") || label.includes("environment");
             });
 
-            // Jika tidak ada label khusus, pilih kamera terakhir dalam daftar (umumnya kamera belakang HHT)
             let selectedCameraId = backCamera ? backCamera.id : devices[devices.length - 1].id;
 
             html5QrCode.start(
@@ -854,13 +851,44 @@ function mulaiScan() {
     });
 }
 
+/**
+ * Pengecekan Otomatis (Auto-Fill) saat Barcode di-scan atau diketik di Modal Tambah Barang
+ */
+function cekAutoFillTambahBarang(barcode) {
+    if (!barcode) return;
+
+    const inputNama = document.getElementById("tambahNama");
+    const inputSku = document.getElementById("tambahSku");
+    const inputLokasi = document.getElementById("tambahLokasi");
+    const inputExpired = document.getElementById("tambahExpired");
+
+    // Cari apakah barcode sudah terdaftar di stok
+    const barangAda = daftarBarang.find(item => String(item.barcode).trim() === String(barcode).trim());
+
+    if (barangAda) {
+        if (inputNama) inputNama.value = barangAda.nama || "";
+        if (inputSku) inputSku.value = barangAda.sku && barangAda.sku !== "-" ? barangAda.sku : "";
+        if (inputLokasi) inputLokasi.value = barangAda.lokasi && barangAda.lokasi !== "-" ? barangAda.lokasi : "";
+        if (inputExpired && barangAda.expired && barangAda.expired !== "-") {
+            inputExpired.value = barangAda.expired;
+        }
+
+        // Kursor langsung otomatis ke Stok Awal
+        const inputStok = document.getElementById("tambahStok");
+        if (inputStok) inputStok.focus();
+    }
+}
+
 function scanUntukTambahBarang() {
     const elModalScan = document.getElementById("modalScan");
     if (elModalScan) elModalScan.style.display = "flex";
 
     jalankanScannerKamera(function (decodedText) {
         const inputBarcode = document.getElementById("tambahBarcode");
-        if (inputBarcode) inputBarcode.value = decodedText;
+        if (inputBarcode) {
+            inputBarcode.value = decodedText;
+            cekAutoFillTambahBarang(decodedText);
+        }
     });
 }
 
@@ -980,9 +1008,36 @@ function kelolaDanHapusUser() {
 }
 
 function bukaTambahBarang(defaultBarcode = "") {
-    document.getElementById("tambahBarcode").value = defaultBarcode;
+    const inputBarcode = document.getElementById("tambahBarcode");
+    const inputNama = document.getElementById("tambahNama");
+    const inputSku = document.getElementById("tambahSku");
+    const inputStok = document.getElementById("tambahStok");
+    const inputLokasi = document.getElementById("tambahLokasi");
+    const inputExpired = document.getElementById("tambahExpired");
+
+    if (inputBarcode) inputBarcode.value = defaultBarcode;
+    if (inputNama) inputNama.value = "";
+    if (inputSku) inputSku.value = "";
+    if (inputStok) inputStok.value = "";
+    if (inputLokasi) inputLokasi.value = "";
+    if (inputExpired) inputExpired.value = "";
+
     document.getElementById("modalTambahBarang").style.display = "flex";
+
+    if (inputBarcode) {
+        inputBarcode.focus();
+
+        // Listener otomatis saat barcode diketik atau ditembak laser HHT
+        inputBarcode.oninput = function () {
+            cekAutoFillTambahBarang(this.value.trim());
+        };
+
+        if (defaultBarcode) {
+            cekAutoFillTambahBarang(defaultBarcode);
+        }
+    }
 }
+
 function tutupTambahBarang() { document.getElementById("modalTambahBarang").style.display = "none"; }
 
 function simpanBarangBaru() {
@@ -995,20 +1050,43 @@ function simpanBarangBaru() {
 
     if (!barcode || !nama || isNaN(stok) || stok < 0) return alert("⚠️ Barcode, Nama, dan Stok Wajib Diisi.");
 
-    const barangBaru = { barcode, nama, sku: sku || "-", stok, lokasi: lokasi || "-", expired: expired || "-" };
-    daftarBarang.push(barangBaru);
-    localStorage.setItem("daftarBarang", JSON.stringify(daftarBarang));
+    // Cek apakah barang sudah ada di database untuk memperbarui stok atau menambah barang baru
+    let barangExisting = daftarBarang.find(item => String(item.barcode).trim() === barcode);
+
+    if (barangExisting) {
+        barangExisting.stok = Number(barangExisting.stok || 0) + stok;
+        if (lokasi && lokasi !== "-") barangExisting.lokasi = lokasi;
+        if (expired && expired !== "-") barangExisting.expired = expired;
+        if (sku && sku !== "-") barangExisting.sku = sku;
+        
+        // Update rincian rak
+        const listRak = dapatkanListRak(barangExisting);
+        let targetRak = listRak.find(r => r.rak.toLowerCase() === (lokasi || "Utama / Transit").toLowerCase());
+        if (targetRak) {
+            targetRak.qty += stok;
+        } else {
+            listRak.push({ rak: lokasi || "Utama / Transit", qty: stok });
+        }
+        barangExisting.detailRak = listRak;
+
+        localStorage.setItem("daftarBarang", JSON.stringify(daftarBarang));
+        tampilkanDetailBarang(barangExisting);
+    } else {
+        const barangBaru = { barcode, nama, sku: sku || "-", stok, lokasi: lokasi || "-", expired: expired || "-" };
+        daftarBarang.push(barangBaru);
+        localStorage.setItem("daftarBarang", JSON.stringify(daftarBarang));
+        tampilkanDetailBarang(barangBaru);
+    }
 
     syncKeGoogleSheet();
     kirimTransaksiKeGoogleSheet({
-        jenis: "BARANG BARU",
-        barcode, namaBarang: nama, jumlah: stok, user: userAktif, keterangan: "Pendaftaran Baru"
+        jenis: "BARANG BARU / TAMBAH STOK",
+        barcode, namaBarang: nama, jumlah: stok, user: userAktif, keterangan: "Pendaftaran/Penambahan Stok"
     });
 
     updateDashboardStats();
     tutupTambahBarang();
-    tampilkanDetailBarang(barangBaru);
-    alert("✅ Barang Baru Berhasil Ditambahkan!");
+    alert("✅ Stok / Barang Baru Berhasil Disimpan!");
 }
 
 // ==========================================================
