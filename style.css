@@ -1,204 +1,185 @@
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-    font-family:Arial,sans-serif;
+/* ==========================================================
+   1. BASE STYLES & RESET
+   ========================================================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+    -webkit-tap-highlight-color: transparent; /* Hilangkan efek kilatan biru/grey di HP */
 }
 
-body{
-    background:#f5f7fb;
-    color:#333;
-    padding-bottom:80px;
+body {
+    background: #f5f7fb;
+    color: #333;
+    padding-bottom: 80px;
 }
 
-.topbar{
-    background:#1565C0;
-    color:white;
-    padding:18px;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    position:sticky;
-    top:0;
+/* ==========================================================
+   2. NAVBAR & TOPBAR
+   ========================================================== */
+.topbar {
+    background: #1565C0;
+    color: white;
+    padding: 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
 }
 
-.topbar h2{
-    font-size:24px;
+.topbar h2 {
+    font-size: 24px;
 }
 
-.dashboard{
-    padding:15px;
+.bottom {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    justify-content: space-around;
+    background: white;
+    padding: 12px;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, .1);
+    z-index: 100;
 }
 
-.search-box{
-    display:flex;
-    gap:10px;
-    margin-bottom:15px;
+.bottom button {
+    border: none;
+    background: none;
+    font-size: 24px;
+    cursor: pointer;
 }
 
-.search-box input{
-    flex:1;
-    padding:12px;
-    border:1px solid #ddd;
-    border-radius:12px;
-    font-size:16px;
+/* ==========================================================
+   3. DASHBOARD, SEARCH & CARDS
+   ========================================================== */
+.dashboard {
+    padding: 15px;
 }
 
-.search-box button{
-    background:#1565C0;
-    color:white;
-    border:none;
-    border-radius:12px;
-    padding:12px 16px;
+.search-box {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
 }
 
-.info-card{
-    background:white;
-    border-radius:15px;
-    padding:18px;
-    margin-bottom:15px;
-    box-shadow:0 2px 8px rgba(0,0,0,.1);
-    text-align:center;
+.search-box input {
+    flex: 1;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    font-size: 16px;
 }
 
-.info-card h1{
-    margin-top:10px;
-    color:#1565C0;
+.search-box button {
+    background: #1565C0;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 16px;
+    cursor: pointer;
 }
 
-.judul{
-    padding:0 15px;
-    margin-top:10px;
+.info-card {
+    background: white;
+    border-radius: 15px;
+    padding: 18px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .1);
+    text-align: center;
 }
 
-.grid-menu{
-    display:grid;
-    grid-template-columns:repeat(3,1fr);
-    gap:15px;
-    padding:15px;
+.info-card h1 {
+    margin-top: 10px;
+    color: #1565C0;
 }
 
-.grid-menu button{
-    background:white;
-    border:none;
-    border-radius:15px;
-    padding:20px;
-    font-size:16px;
-    box-shadow:0 2px 8px rgba(0,0,0,.1);
-    cursor:pointer;
+.judul {
+    padding: 0 15px;
+    margin-top: 10px;
 }
 
-.grid-menu button:active{
-    transform:scale(.95);
+/* Grid Menu Dashboard */
+.grid-menu {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    padding: 15px;
 }
 
-#reader{
-    margin:15px;
-    border-radius:15px;
-    overflow:hidden;
+.grid-menu button,
+.grid-menu .menu-card {
+    background: white;
+    border: none;
+    border-radius: 15px;
+    padding: 20px 10px;
+    font-size: 15px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .1);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: #333;
 }
 
-.card{
-    background:white;
-    margin:15px;
-    padding:15px;
-    border-radius:15px;
-    box-shadow:0 2px 8px rgba(0,0,0,.1);
+.grid-menu button:active,
+.grid-menu .menu-card:active {
+    transform: scale(.95);
+}
+
+.menu-icon {
+    font-size: 22px;
+}
+
+.menu-label {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.card {
+    background: white;
+    margin: 15px;
+    padding: 15px;
+    border-radius: 15px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .1);
 }
 
 .card h2,
-.card h3{
-    margin-bottom:10px;
-    color:#1565C0;
+.card h3 {
+    margin-bottom: 10px;
+    color: #1565C0;
 }
 
-.card p{
-    margin:8px 0;
+.card p {
+    margin: 8px 0;
 }
 
-.card button{
-    margin-top:10px;
-    margin-right:8px;
-    padding:10px 15px;
-    border:none;
-    border-radius:10px;
-    background:#1565C0;
-    color:white;
+.card button {
+    margin-top: 10px;
+    margin-right: 8px;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 10px;
+    background: #1565C0;
+    color: white;
+    cursor: pointer;
 }
 
-.bottom{
-    position:fixed;
-    left:0;
-    right:0;
-    bottom:0;
-    display:flex;
-    justify-content:space-around;
-    background:white;
-    padding:12px;
-    box-shadow:0 -2px 8px rgba(0,0,0,.1);
+#reader {
+    margin: 15px;
+    border-radius: 15px;
+    overflow: hidden;
 }
 
-.bottom button{
-    border:none;
-    background:none;
-    font-size:24px;
-}
-/* ==========================
-   DARK MODE STYLES
-   ========================== */
-body.dark-mode {
-    background-color: #121212 !important;
-    color: #e0e0e0 !important;
-}
-
-/* Card, Header, dan Input dalam Dark Mode */
-body.dark-mode .card,
-body.dark-mode .info-card,
-body.dark-mode .modal-content,
-body.dark-mode .grid-menu button {
-    background-color: #1e1e1e !important;
-    color: #ffffff !important;
-    border-color: #333333 !important;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.3) !important;
-}
-
-/* Input text di Dark Mode */
-body.dark-mode input[type="text"],
-body.dark-mode input[type="number"],
-body.dark-mode input[type="date"] {
-    background-color: #2a2a2a !important;
-    color: #ffffff !important;
-    border: 1px solid #444444 !important;
-}
-
-/* Header & Bottom Nav */
-body.dark-mode .topbar {
-    background-color: #0f172a !important;
-}
-
-body.dark-mode nav.bottom {
-    background-color: #1e1e1e !important;
-    border-top: 1px solid #333333 !important;
-}
-
-body.dark-mode nav.bottom button {
-    color: #ffffff !important;
-}
-
-/* Tabel di Modal Stok & Expired */
-body.dark-mode table {
-    background-color: #1e1e1e !important;
-    color: #ffffff !important;
-}
-
-body.dark-mode table td {
-    border-color: #333333 !important;
-}
-/* Hilangkan efek kilatan biru/grey saat tombol disentuh di HP */
-* {
-    -webkit-tap-highlight-color: transparent;
-}
-/* Wrapper Password & Ikon Mata */
+/* ==========================================================
+   4. FORM LOGIN, TOGGLE PASSWORD & CHECKBOX
+   ========================================================== */
 .password-input-wrapper {
     position: relative;
     display: flex;
@@ -212,17 +193,23 @@ body.dark-mode table td {
     box-sizing: border-box;
 }
 
-.toggle-password {
+.toggle-password,
+.btn-toggle-eye {
     position: absolute;
-    right: 14px;
+    right: 12px;
+    background: none;
+    border: none;
     cursor: pointer;
     user-select: none;
     font-size: 1.2rem;
     z-index: 2;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     -webkit-tap-highlight-color: transparent;
 }
 
-/* Checkbox Ingat NIK */
 .form-options {
     display: flex;
     align-items: center;
@@ -244,9 +231,12 @@ body.dark-mode table td {
     width: 18px;
     height: 18px;
     cursor: pointer;
-    accent-color: #2563eb; /* Warna centang sesuai tema biru */
+    accent-color: #2563eb;
 }
-/* Banner Indikator Jaringan */
+
+/* ==========================================================
+   5. BANNER INDIKATOR JARINGAN (ONLINE / OFFLINE)
+   ========================================================== */
 .network-banner {
     display: flex;
     align-items: center;
@@ -276,7 +266,9 @@ body.dark-mode table td {
     font-size: 0.75rem;
 }
 
-/* Tampilan List Breakdown Rak */
+/* ==========================================================
+   6. TAMPILAN LIST BREAKDOWN RAK (MULTI-LOKASI)
+   ========================================================== */
 .rak-list-container {
     margin-top: 10px;
     background: #f8fafc;
@@ -308,4 +300,72 @@ body.dark-mode table td {
     padding: 2px 8px;
     border-radius: 6px;
     font-weight: bold;
+}
+
+/* ==========================================================
+   7. DARK MODE STYLES
+   ========================================================== */
+body.dark-mode {
+    background-color: #121212 !important;
+    color: #e0e0e0 !important;
+}
+
+/* Card, Header, dan Input dalam Dark Mode */
+body.dark-mode .card,
+body.dark-mode .info-card,
+body.dark-mode .modal-content,
+body.dark-mode .grid-menu button,
+body.dark-mode .grid-menu .menu-card {
+    background-color: #1e1e1e !important;
+    color: #ffffff !important;
+    border-color: #333333 !important;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Input text di Dark Mode */
+body.dark-mode input[type="text"],
+body.dark-mode input[type="number"],
+body.dark-mode input[type="password"],
+body.dark-mode input[type="date"] {
+    background-color: #2a2a2a !important;
+    color: #ffffff !important;
+    border: 1px solid #444444 !important;
+}
+
+/* Header & Bottom Nav */
+body.dark-mode .topbar {
+    background-color: #0f172a !important;
+}
+
+body.dark-mode nav.bottom {
+    background-color: #1e1e1e !important;
+    border-top: 1px solid #333333 !important;
+}
+
+body.dark-mode nav.bottom button {
+    color: #ffffff !important;
+}
+
+/* Tabel di Modal Stok & Expired */
+body.dark-mode table {
+    background-color: #1e1e1e !important;
+    color: #ffffff !important;
+}
+
+body.dark-mode table td {
+    border-color: #333333 !important;
+}
+
+/* Breakdown Rak & Checkbox di Dark Mode */
+body.dark-mode .rak-list-container {
+    background: #2a2a2a !important;
+    border-color: #444444 !important;
+}
+
+body.dark-mode .rak-nama {
+    color: #cbd5e1 !important;
+}
+
+body.dark-mode .checkbox-container {
+    color: #cbd5e1 !important;
 }
