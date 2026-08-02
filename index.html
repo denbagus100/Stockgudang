@@ -1,21 +1,33 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" style="background-color: #0f172a;">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stock Gudang</title>
 
+    <style>
+        html, body {
+            background-color: #0f172a !important;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow-x: hidden;
+        }
+        /* Sembunyikan isi body sekejap sampai JS menentukan halaman Login/MainApp */
+        body {
+            opacity: 0;
+            transition: opacity 0.15s ease-in-out;
+        }
+        body.ready {
+            opacity: 1;
+        }
+    </style>
+
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="modal.css">
 </head>
 <body style="background-color: #0f172a;">
-
-
-<div id="networkBanner" class="network-banner online">
-    <span id="networkIcon">🟢</span>
-    <span id="networkText">Terhubung Ke Server (Online)</span>
-    <span id="syncQueueBadge" class="sync-badge" style="display: none;">0 Pending</span>
-</div>
 
 <div id="halamanLogin" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0f172a; display: none; align-items: center; justify-content: center; z-index: 99999;">
     <div style="background: white; width: 90%; max-width: 380px; padding: 25px; border-radius: 16px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.4);">
@@ -51,7 +63,11 @@
 </div>
 
 <div id="mainApp" style="display: none;">
-
+<div id="networkBanner" class="network-banner online">
+    <span id="networkIcon">🟢</span>
+    <span id="networkText">Terhubung Ke Server (Online)</span>
+    <span id="syncQueueBadge" class="sync-badge" style="display: none;">0 Pending</span>
+</div>
     <header class="topbar">
         <h2>📦 Stock Gudang</h2>
         <span id="tanggal"></span>
