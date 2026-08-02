@@ -27,7 +27,13 @@ let offlineQueue = JSON.parse(localStorage.getItem("offlineQueue")) || [];
 // 2. INITIALIZATION & SYSTEM LOGIN
 // ==========================================================
 document.addEventListener("DOMContentLoaded", function () {
-    // 1. Tampilkan Tanggal Hari Ini
+    // 1. Cek Status Login DULUAN agar tidak berbayang saat refresh
+    cekStatusLogin();
+
+    // 2. Logika Ingat NIK
+    muatNikTersimpan();
+
+    // 3. Tampilkan Tanggal Hari Ini
     const sekarang = new Date();
     const elTanggal = document.getElementById("tanggal");
     if (elTanggal) {
@@ -35,12 +41,6 @@ document.addEventListener("DOMContentLoaded", function () {
             weekday: "long", day: "numeric", month: "long", year: "numeric"
         });
     }
-
-    // 2. Logika Ingat NIK
-    muatNikTersimpan();
-
-    // 3. Cek Status Login
-    cekStatusLogin();
 
     // 4. Load Data Stok dari Google Sheets
     loadDataStokDariSheet();
@@ -84,12 +84,12 @@ function cekStatusLogin() {
 
     if (userAktifInfo && userAktifInfo.nik) {
         if (elHalamanLogin) elHalamanLogin.style.display = "none";
-        if (elMainApp) elMainApp.style.display = "block"; // Tampilkan Main App
+        if (elMainApp) elMainApp.style.display = "block";
         userAktif = userAktifInfo.nama || userAktifInfo.nik;
         terapkanAksesRole();
     } else {
-        if (elMainApp) elMainApp.style.display = "none"; // Sembunyikan Main App
-        if (elHalamanLogin) elHalamanLogin.style.display = "flex"; // Tampilkan Form Login
+        if (elMainApp) elMainApp.style.display = "none";
+        if (elHalamanLogin) elHalamanLogin.style.display = "flex";
     }
 }
 
@@ -437,7 +437,7 @@ function simpanMove() {
 }
 
 // ==========================================================
-// 5. MODAL POPUP HELPERS (STOCK IN/OUT/MOVE/EXPIRED/SETTING)
+// 5. MODAL POPUP HELPERS
 // ==========================================================
 function bukaStockIn() {
     if (!barangAktif) return alert("Pilih barang terlebih dahulu.");
@@ -543,7 +543,7 @@ function mulaiScan() {
                 alert("❌ Barang dengan barcode " + decodedText + " tidak ditemukan.");
             }
         },
-        function (error) {}
+        function () {}
     ).catch(err => {
         console.error("Gagal membuka kamera:", err);
         alert("Tidak dapat mengakses kamera. Pastikan izin kamera sudah diberikan.");
@@ -569,7 +569,7 @@ function scanUntukTambahBarang() {
             const inputBarcode = document.getElementById("tambahBarcode");
             if (inputBarcode) inputBarcode.value = decodedText;
         },
-        function (error) {}
+        function () {}
     ).catch(err => {
         console.error("Gagal membuka kamera:", err);
         alert("📷 Tidak dapat mengakses kamera!");
@@ -614,7 +614,6 @@ function tampilkanDetailBarang(barang) {
     document.getElementById("lokasiBarang").innerHTML = barang.lokasi || '-';
     document.getElementById("expiredBarang").innerHTML = barang.expired + "<br>" + cekExpired(barang.expired);
 
-    // Breakdown Rak Multi-Lokasi
     renderDetailRak(barang);
 }
 
