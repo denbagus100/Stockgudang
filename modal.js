@@ -184,3 +184,41 @@ window.addEventListener("click", function(e) {
         tutupTambahBarang();
     }
 });
+/**
+ * Menampilkan Modal Bantuan / Direct WhatsApp Admin
+ * Nomor Admin: 089680162073
+ */
+function tampilkanModalAdmin(nomorWA = "6289680162073") {
+    const nikInput = document.getElementById('loginNik')?.value || '-';
+    const pesanWA = encodeURIComponent(`Halo Admin, saya mengalami kendala pada aplikasi Sistem Gudang.\nNIK: ${nikInput}\nMohon bantuannya.`);
+    const urlWA = `https://wa.me/${nomorWA}?text=${pesanWA}`;
+
+    const modalHTML = `
+        <div class="modal-content-card">
+            <div class="modal-header">
+                <h3>💬 Hubungi Admin Gudang</h3>
+                <button class="btn-close-x" onclick="tutupModal('modalAdmin')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Mengalami kendala saat login atau masalah teknis pada aplikasi?</p>
+                <a href="${urlWA}" target="_blank" class="btn-wa-direct">
+                   🟢 Chat Admin via WhatsApp
+                </a>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="tutupModal('modalAdmin')">Tutup</button>
+            </div>
+        </div>
+    `;
+
+    let modalContainer = document.getElementById('modalAdmin');
+    if (!modalContainer) {
+        modalContainer = document.createElement('div');
+        modalContainer.id = 'modalAdmin';
+        modalContainer.className = 'custom-modal-overlay';
+        document.body.appendChild(modalContainer);
+    }
+    
+    modalContainer.innerHTML = modalHTML;
+    bukaModal('modalAdmin');
+}
