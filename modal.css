@@ -98,3 +98,75 @@ flex:1;
     font-weight:bold;
 
 }
+/* Modal Container Melayang di Atas Layar */
+.custom-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5); /* Latar belakang gelap transparan */
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 99999; /* Memastikan modal selalu di paling depan */
+    padding: 16px;
+    box-sizing: border-box;
+}
+
+/* Kartu Pop-Up Modal */
+.modal-content-card {
+    background: #ffffff;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 360px;
+    padding: 20px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    text-align: center;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #1e293b;
+}
+
+.btn-close-x {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #64748b;
+}
+
+.btn-wa-direct {
+    display: block;
+    width: 100%;
+    padding: 12px 0;
+    background-color: #25D366;
+    color: white;
+    text-align: center;
+    border-radius: 10px;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 1rem;
+    margin: 16px 0;
+    box-shadow: 0 4px 10px rgba(37, 211, 102, 0.3);
+}
+
+.btn-secondary {
+    background: #e2e8f0;
+    color: #475569;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+}
