@@ -947,10 +947,12 @@ function cariBarang() {
     tampilkanDetailBarang(barang);
 }
 
+/**
+ * Tampilkan Pop-Up Modal Detail Barang
+ */
 function tampilkanDetailBarang(barang) {
     barangAktif = barang;
 
-    document.getElementById("detailBarang").style.display = "block";
     document.getElementById("namaBarang").innerHTML = barang.nama;
     document.getElementById("hasilScanText").innerHTML = barang.barcode;
     document.getElementById("skuBarang").innerHTML = barang.sku || '-';
@@ -959,6 +961,18 @@ function tampilkanDetailBarang(barang) {
     document.getElementById("expiredBarang").innerHTML = barang.expired + "<br>" + cekExpired(barang.expired);
 
     renderDetailRak(barang);
+
+    // Tampilkan Modal Pop-up secara langsung di tengah layar
+    const elDetail = document.getElementById("detailBarang");
+    if (elDetail) elDetail.style.display = "flex";
+}
+
+/**
+ * Tutup Modal Detail Barang
+ */
+function tutupDetailBarang() {
+    const elDetail = document.getElementById("detailBarang");
+    if (elDetail) elDetail.style.display = "none";
 }
 
 // ==========================================================
