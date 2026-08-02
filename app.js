@@ -26,17 +26,27 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // 2. Cek Status Login
+    // 2. Logika Ingat NIK (Otomatis isi NIK tersimpan saat load)
+    muatNikTersimpan();
+
+    // 3. Cek Status Login
     cekStatusLogin();
 
-    // 3. Load Data Stok dari Google Sheets
+    // 4. Load Data Stok dari Google Sheets
     loadDataStokDariSheet();
 
-    // 4. Load Mode Gelap (Dark Mode)
+    // 5. Load Mode Gelap (Dark Mode)
     const isDarkMode = localStorage.getItem("darkMode") === "true";
     if (isDarkMode) document.body.classList.add("dark-mode");
     const toggleSwitch = document.getElementById("toggleDarkMode");
     if (toggleSwitch) toggleSwitch.checked = isDarkMode;
+
+    // 6. Pasang Scanner Laser HHT (Enter Otomatis)
+    pasangHHTEnter("keyword", cariBarang);
+    pasangHHTEnter("tambahBarcode", () => document.getElementById("tambahNama")?.focus());
+    pasangHHTEnter("jumlahIN", simpanStockIn);
+    pasangHHTEnter("jumlahOUT", simpanStockOut);
+    pasangHHTEnter("lokasiBaru", simpanMove);
 });
 
 function getDatabaseUser() {
@@ -67,13 +77,45 @@ function cekStatusLogin() {
     }
 }
 
+// Logika BACA NIK Tersimpan
+function muatNikTersimpan() {
+    const savedNik = localStorage.getItem("saved_nik");
+    const inputNik = document.getElementById("loginNik") || document.getElementById("inputNik");
+    const chkRemember = document.getElementById("rememberNik");
+
+    if (savedNik && inputNik) {
+        inputNik.value = savedNik;
+        if (chkRemember) chkRemember.checked = true;
+    }
+}
+
+// Fungsi Utama Penanganan Submit Login
+function handleLogin(event) {
+    prosesLogin(event);
+}
+
 function prosesLogin(event) {
     if (event) event.preventDefault();
 
-    const nikInput = document.getElementById("inputNik").value.trim();
-    const passwordInput = document.getElementById("inputPassword").value.trim();
-    const users = getDatabaseUser();
+    // Dukung ID loginNik atau inputNik
+    const inputNikElem = document.getElementById("loginNik") || document.getElementById("inputNik");
+    const inputPassElem = document.getElementById("loginPassword") || document.getElementById("inputPassword");
+    const rememberCheckbox = document.getElementById("rememberNik");
 
+    if (!inputNikElem || !inputPassElem) return;
+
+    const nikInput = inputNikElem.value.trim();
+    const passwordInput = inputPassElem.value.trim();
+    const isRememberChecked = rememberCheckbox ? rememberCheckbox.checked : false;
+
+    // Logika Simpan / Hapus NIK di LocalStorage
+    if (isRememberChecked && nikInput) {
+        localStorage.setItem("saved_nik", nikInput);
+    } else {
+        localStorage.removeItem("saved_nik");
+    }
+
+    const users = getDatabaseUser();
     const akunDitemukan = users.find(u => String(u.nik) === nikInput && u.password === passwordInput);
 
     if (akunDitemukan) {
@@ -651,29 +693,25 @@ function switchDarkMode(isDark) {
         localStorage.setItem("darkMode", "false");
     }
 }
-// ==========================================================
-// KELOLA HALAMAN DAFTAR STOK BARANG
-// ==========================================================
 
-// 1. Membuka Halaman Daftar Stok & Render Data
+// ==========================================================
+// 9. KELOLA HALAMAN DAFTAR STOK BARANG
+// ==========================================================
 function bukaDaftarStok() {
     const elModal = document.getElementById("modalDaftarStok");
     if (elModal) elModal.style.display = "flex";
     
-    // Reset pencarian & render tabel
     const elInput = document.getElementById("filterStokInput");
     if (elInput) elInput.value = "";
     
     renderTabelStok(daftarBarang);
 }
 
-// 2. Menutup Halaman Daftar Stok
 function tutupDaftarStok() {
     const elModal = document.getElementById("modalDaftarStok");
     if (elModal) elModal.style.display = "none";
 }
 
-// 3. Render Tabel Stok Ke Layar
 function renderTabelStok(dataList) {
     const container = document.getElementById("tabelStokContainer");
     if (!container) return;
@@ -683,7 +721,6 @@ function renderTabelStok(dataList) {
         return;
     }
 
-    // Tampilkan maksimal 100 barang pertama saat pencarian agar loading cepat
     const dataTampil = dataList.slice(0, 100);
 
     let html = `
@@ -726,7 +763,6 @@ function renderTabelStok(dataList) {
     container.innerHTML = html;
 }
 
-// 4. Filter Pencarian Real-Time
 function filterTabelStok() {
     const key = document.getElementById("filterStokInput").value.trim().toLowerCase();
     
@@ -744,7 +780,6 @@ function filterTabelStok() {
     renderTabelStok(hasilFilter);
 }
 
-// 5. Pilih Barang dari Tabel dan Buka Detailnya
 function pilihBarangDariTabel(barcode) {
     const barang = daftarBarang.find(b => String(b.barcode) === String(barcode));
     if (barang) {
@@ -752,37 +787,8 @@ function pilihBarangDariTabel(barcode) {
         tampilkanDetailBarang(barang);
     }
 }
-// ==========================================================
-// DUKUNGAN SCANNER LASER HHT (ENTER OTOMATIS)
-// ==========================================================
-document.addEventListener("DOMContentLoaded", function () {
-    // 1. Enter di Pencarian Utama
-    pasangHHTEnter("keyword", function () {
-        cariBarang();
-    });
 
-    // 2. Enter di Barcode Tambah Barang -> Lompat ke Input Nama
-    pasangHHTEnter("tambahBarcode", function () {
-        const elNama = document.getElementById("tambahNama");
-        if (elNama) elNama.focus();
-    });
-
-    // 3. Enter di Jumlah Stock IN -> Simpan Otomatis
-    pasangHHTEnter("jumlahIN", function () {
-        simpanStockIn();
-    });
-
-    // 4. Enter di Jumlah Stock OUT -> Simpan Otomatis
-    pasangHHTEnter("jumlahOUT", function () {
-        simpanStockOut();
-    });
-
-    // 5. Enter di Input Lokasi Baru (Move) -> Simpan Otomatis
-    pasangHHTEnter("lokasiBaru", function () {
-        simpanMove();
-    });
-});
-
+// Helper Pasang Listener HHT Scanner
 function pasangHHTEnter(idInput, aksi) {
     const el = document.getElementById(idInput);
     if (el) {
@@ -793,40 +799,4 @@ function pasangHHTEnter(idInput, aksi) {
             }
         });
     }
-}
-// ============================================================
-// LOGIKA INGAT NIK (AUTOMATIC REMEMBER ME)
-// ============================================================
-
-// 1. OTOMATIS BACA NIK SAAT APLIKASI DIBUKA
-document.addEventListener('DOMContentLoaded', () => {
-    const savedNik = localStorage.getItem('saved_nik');
-    const inputNik = document.getElementById('loginNik');
-    const chkRemember = document.getElementById('rememberNik');
-
-    if (savedNik && inputNik) {
-        inputNik.value = savedNik;
-        if (chkRemember) {
-            chkRemember.checked = true; // Otomatis centang checkbox
-        }
-    }
-});
-
-// 2. SIMPAN / HAPUS NIK SAAT TOMBOL LOGIN DIKLIK
-function handleLogin(event) {
-    event.preventDefault();
-
-    const nikValue = document.getElementById('loginNik')?.value.trim();
-    const passwordValue = document.getElementById('loginPassword')?.value;
-    const isRememberChecked = document.getElementById('rememberNik')?.checked;
-
-    // Simpan atau Hapus NIK berdasarkan status centang
-    if (isRememberChecked && nikValue) {
-        localStorage.setItem('saved_nik', nikValue);
-    } else {
-        localStorage.removeItem('saved_nik');
-    }
-
-    // Lanjutkan ke alur verifikasi login utama Anda
-    console.log("Memproses login NIK:", nikValue);
 }
