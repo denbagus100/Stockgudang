@@ -10,21 +10,18 @@
 </head>
 <body>
 
-<!-- BANNER STATUS JARINGAN (ONLINE / OFFLINE) -->
 <div id="networkBanner" class="network-banner online">
     <span id="networkIcon">🟢</span>
     <span id="networkText">Terhubung Ke Server (Online)</span>
     <span id="syncQueueBadge" class="sync-badge" style="display: none;">0 Pending</span>
 </div>
 
-<!-- HALAMAN LOGIN (MENDUKUNG AUTOFILL / SIMPAN PASSWORD BROWSER + IKON MATA & INGAT NIK) -->
-<div id="halamanLogin" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0f172a; display: flex; align-items: center; justify-content: center; z-index: 99999;">
+<div id="halamanLogin" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0f172a; display: none; align-items: center; justify-content: center; z-index: 99999;">
     <div style="background: white; width: 90%; max-width: 380px; padding: 25px; border-radius: 16px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.4);">
         <div style="font-size: 42px; margin-bottom: 8px;">📦</div>
         <h2 style="margin: 0 0 4px 0; color: #0f172a; font-size: 22px;">Sistem Gudang</h2>
         <p style="font-size: 13px; color: #64748b; margin-bottom: 20px;">Silakan masukkan NIK & Password Anda</p>
 
-        <!-- FORM LOGIN BARU -->
         <form id="formLogin" onsubmit="handleLogin(event)">
             <div class="form-group" style="text-align: left; margin-bottom: 15px;">
                 <label for="loginNik" style="font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 5px;">NIK (Nomor Induk Karyawan)</label>
@@ -52,7 +49,6 @@
     </div>
 </div>
 
-<!-- PEMBUNGKUS UTAMA APLIKASI -->
 <div id="mainApp" style="display: none;">
 
     <header class="topbar">
@@ -86,7 +82,6 @@
         </button>
     </div>
 
-    <!-- Box Kelola User (Khusus Admin) -->
     <div class="khusus-admin" style="background: #f0fdf4; padding: 12px; border-radius: 12px; margin: 12px 16px; border: 1px solid #bbf7d0; text-align: left;">
         <p style="font-size: 13px; color: #166534; margin-bottom: 8px;"><b>👤 Kelola Akun & NIK:</b></p>
         <div style="display: flex; gap: 8px;">
@@ -99,7 +94,6 @@
         </div>
     </div>
 
-    <!-- Bottom Navigation Bar -->
     <nav class="bottom">
         <button type="button" onclick="window.scrollTo({top: 0, behavior: 'smooth'});">🏠</button>
         <button type="button" onclick="mulaiScan()" title="Scan Barcode">📷</button>
@@ -107,13 +101,7 @@
         <button type="button" onclick="bukaSetting()" title="Pengaturan">⚙️</button>
     </nav>
 
-</div> <!-- AKHIR DARI mainApp -->
-
-
-<!-- MODAL-MODAL POPUP -->
-
-<!-- Modal Tambah Barang Baru -->
-<div id="modalTambahBarang" class="modal">
+</div> <div id="modalTambahBarang" class="modal">
     <div class="modal-content" style="max-width: 450px; text-align: left;">
         <h2>➕ Tambah Barang Baru</h2>
         <p style="font-size: 13px; color: #666; margin-bottom: 12px;">Daftarkan barcode baru ke dalam sistem.</p>
@@ -158,7 +146,6 @@
     </div>
 </div>
 
-<!-- Modal Pop-Up Scanner Barcode -->
 <div id="modalScan" class="modal">
     <div class="modal-content" style="max-width: 420px; text-align: center;">
         <h2 style="margin-bottom: 10px;">📷 Scan Barcode</h2>
@@ -172,7 +159,6 @@
     </div>
 </div>
 
-<!-- Detail Barang -->
 <div id="detailBarang" class="card" style="display:none;">
     <h2 id="namaBarang"></h2>
     <p><b>Barcode :</b> <span id="hasilScanText"></span></p>
@@ -188,7 +174,6 @@
     <button type="button" onclick="bukaMove()">🔄 Move</button>
 </div>
 
-<!-- Modal Stock IN -->
 <div id="modalStockIn" class="modal">
     <div class="modal-content">
         <h2>📥 Stock IN</h2>
@@ -203,7 +188,6 @@
     </div>
 </div>
 
-<!-- Modal Stock OUT -->
 <div id="modalStockOut" class="modal">
     <div class="modal-content">
         <h2>📤 Stock OUT</h2>
@@ -218,7 +202,6 @@
     </div>
 </div>
 
-<!-- Modal Daftar Barang Expired -->
 <div id="modalExpired" class="modal">
     <div class="modal-content" style="max-width: 500px; max-height: 80vh; overflow-y: auto;">
         <h2>⚠️ Barang Expired / Hampir Expired</h2>
@@ -230,7 +213,6 @@
     </div>
 </div>
 
-<!-- Modal MOVE -->
 <div id="modalMove" class="modal">
     <div class="modal-content">
         <h2>🔄 Move Barang</h2>
@@ -244,7 +226,6 @@
     </div>
 </div>
 
-<!-- Modal History -->
 <div id="modalHistory" class="modal">
     <div class="modal-content">
         <h2>📄 History Transaksi</h2>
@@ -255,17 +236,14 @@
     </div>
 </div>
 
-<!-- Modal Daftar Stok Barang (Tampilan Layar Penuh) -->
 <div id="modalDaftarStok" class="modal" style="display: none; align-items: flex-start; padding: 0;">
     <div class="modal-content" style="width: 100%; max-width: 100%; height: 100vh; border-radius: 0; display: flex; flex-direction: column; padding: 16px; box-sizing: border-box;">
         
-        <!-- Header Halaman -->
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
             <h2 style="margin: 0; font-size: 20px;">📊 Daftar Stok Barang</h2>
             <button type="button" onclick="tutupDaftarStok()" style="background: #ef4444; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer;">✕ Tutup</button>
         </div>
 
-        <!-- Kolom Pencarian Real-Time -->
         <input 
             type="text" 
             id="filterStokInput" 
@@ -274,15 +252,12 @@
             style="width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #cbd5e1; font-size: 14px; box-sizing: border-box; margin-bottom: 12px;"
         >
 
-        <!-- Container Tabel dengan Auto Scroll -->
         <div id="tabelStokContainer" style="flex: 1; overflow-y: auto; background: #f8fafc; border-radius: 10px; padding: 8px; border: 1px solid #e2e8f0;">
-            <!-- Tabel akan di-generate otomatis oleh JS -->
         </div>
 
     </div>
 </div>
 
-<!-- MODAL SETTING -->
 <div id="modalSetting" class="modal">
     <div class="modal-content" style="max-width: 450px;">
         <h2>⚙️ Pengaturan Aplikasi</h2>
@@ -290,9 +265,7 @@
             Akun Aktif: <b id="labelUserLogin">-</b> (<span id="labelRoleUser">-</span>)
         </p>
 
-        <!-- FITUR KHUSUS ADMIN (DIBATASI UNTUK STAFF) -->
         <div class="khusus-admin">
-            <!-- Box Import Excel -->
             <div style="background: #eff6ff; padding: 12px; border-radius: 12px; margin-bottom: 12px; border: 1px solid #dbeafe; text-align: left;">
                 <p style="font-size: 13px; color: #1d4ed8; margin-bottom: 5px;"><b>📤 Import Data dari Excel:</b></p>
                 <input type="file" id="inputExcelFile" accept=".xlsx, .xls" style="display: none;" onchange="prosesImportExcel(event)">
@@ -301,7 +274,6 @@
                 </button>
             </div>
 
-            <!-- Box Download Excel -->
             <div style="margin-bottom: 15px;">
                 <button type="button" onclick="downloadBackupExcel()" style="width: 100%; background: #16a34a; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold;">
                     📊 Download Laporan Excel (.xlsx)
@@ -309,7 +281,6 @@
             </div>
         </div>
 
-        <!-- FITUR BISA DIAKSES SEMUA USER -->
         <div style="background: #fef2f2; padding: 12px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #fecaca; text-align: left;">
             <p style="font-size: 13px; color: #dc2626; margin-bottom: 8px;"><b>⚠️ Pembersihan Data:</b></p>
             <button type="button" onclick="resetHistory()" style="width: 100%; background: #ef4444; color: white; border: none; padding: 9px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px;">
@@ -317,7 +288,6 @@
             </button>
         </div>
 
-        <!-- Switch Dark Mode -->
         <div style="background: #f8fafc; padding: 12px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #e2e8f0; text-align: left; display: flex; justify-content: space-between; align-items: center;">
             <div>
                 <b style="font-size: 14px; color: #334155;">🌙 Dark Mode</b>
@@ -326,7 +296,6 @@
             <input type="checkbox" id="toggleDarkMode" onchange="switchDarkMode(this.checked)" style="width: 20px; height: 20px; cursor: pointer;">
         </div>
 
-        <!-- Tombol Logout -->
         <button type="button" onclick="prosesLogout()" style="width: 100%; background: #475569; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold;">
             🚪 Logout / Keluar Akun
         </button>
@@ -335,7 +304,6 @@
     </div>
 </div>
 
-<!-- JS External Libraries & Scripts -->
 <script src="https://unpkg.com/html5-qrcode"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="modal.js"></script>
