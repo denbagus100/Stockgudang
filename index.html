@@ -64,6 +64,11 @@
         <button onclick="bukaExpiredBarang()">⚠️<br>Expired</button>
         <button onclick="bukaHistory()">📄<br>History</button>
         <button onclick="bukaTambahBarang()">➕<br>Tambah Barang</button>
+    <!-- Tambahkan tombol ini di dalam div grid menu dashboard -->
+<button class="menu-card" onclick="tampilkanModalAdmin('6289680162073')">
+    <div class="menu-icon">📞</div>
+    <span class="menu-label">Contact Admin</span>
+</button>
     </div>
 
     <!-- Box Kelola User (Khusus Admin) -->
@@ -318,13 +323,7 @@
 <!-- JS External Libraries & Scripts -->
 <script src="https://unpkg.com/html5-qrcode"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<div class="login-footer-help">
-    <p>Kendala saat login / masalah app?</p>
-    <button type="button" class="btn-link-help" onclick="tampilkanModalAdmin('6289680162073')">
-        💬 Hubungi Admin
-    </button>
-</div>
-<script src="modal.js"></script>
 <script src="app.js"></script>
+<script src="modal.js"></script>
 </body>
 </html>
