@@ -800,3 +800,109 @@ function pasangHHTEnter(idInput, aksi) {
         });
     }
 }
+// ============================================================
+// LOGIKA JARINGAN ONLINE/OFFLINE & QUEUE AUTO-SYNC
+// ============================================================
+let offlineQueue = JSON.parse(localStorage.getItem("offlineQueue")) || [];
+
+window.addEventListener('online', updateStatusJaringan);
+window.addEventListener('offline', updateStatusJaringan);
+
+function updateStatusJaringan() {
+    const banner = document.getElementById("networkBanner");
+    const icon = document.getElementById("networkIcon");
+    const text = document.getElementById("networkText");
+
+    if (!banner) return;
+
+    if (navigator.onLine) {
+        banner.className = "network-banner online";
+        if (icon) icon.textContent = "🟢";
+        if (text) text.textContent = "Terhubung Ke Server (Online)";
+        
+        // Auto-sync jika ada transaksi tertunda saat offline
+        prosesOfflineQueue();
+    } else {
+        banner.className = "network-banner offline";
+        if (icon) icon.textContent = "🔴";
+        if (text) text.textContent = "Mode Offline (Data tersimpan di HP)";
+    }
+    updateBadgeQueue();
+}
+
+function updateBadgeQueue() {
+    const badge = document.getElementById("syncQueueBadge");
+    if (!badge) return;
+    
+    if (offlineQueue.length > 0) {
+        badge.style.display = "inline-block";
+        badge.textContent = `${offlineQueue.length} Pending`;
+    } else {
+        badge.style.display = "none";
+    }
+}
+
+function simpanKeQueue(transaksi) {
+    offlineQueue.push(transaksi);
+    localStorage.setItem("offlineQueue", JSON.stringify(offlineQueue));
+    updateBadgeQueue();
+}
+
+function prosesOfflineQueue() {
+    if (offlineQueue.length === 0) return;
+
+    console.log("🔄 Mengirim transaksi pending ke Google Sheets...");
+    const queueCopy = [...offlineQueue];
+
+    // Kirim satu per satu
+    queueCopy.forEach((trx, index) => {
+        kirimTransaksiKeGoogleSheet(trx);
+    });
+
+    // Bersihkan antrean setelah dikirim
+    offlineQueue = [];
+    localStorage.removeItem("offlineQueue");
+    updateBadgeQueue();
+    alert("☁️ Semua transaksi offline berhasil disinkronkan ke server!");
+}
+
+// ============================================================
+// LOGIKA MULTI-RAK (BREAKDOWN PER LOKASI)
+// ============================================================
+
+/**
+ * Format data rak: [{ rak: "A-01", qty: 100 }, { rak: "B-02", qty: 50 }]
+ */
+function renderDetailRak(barang) {
+    const container = document.getElementById("rakDetailContainer");
+    if (!container) return;
+
+    // Jika data rak berupa string biasa/lama, konversi ke array
+    let listRak = [];
+    if (Array.isArray(barang.detailRak)) {
+        listRak = barang.detailRak;
+    } else if (barang.lokasi) {
+        listRak = [{ rak: barang.lokasi, qty: barang.stok }];
+    } else {
+        listRak = [{ rak: "Transit / Belum Ditentukan", qty: barang.stok }];
+    }
+
+    let html = `
+        <div class="rak-list-container">
+            <div style="font-size: 0.85rem; font-weight: bold; color: #64748b; margin-bottom: 6px;">
+                📍 Rincian Stok Per Rak:
+            </div>
+    `;
+
+    listRak.forEach(item => {
+        html += `
+            <div class="rak-item">
+                <span class="rak-nama">📦 ${item.rak}</span>
+                <span class="rak-qty">${item.qty} pcs</span>
+            </div>
+        `;
+    });
+
+    html += `</div>`;
+    container.innerHTML = html;
+}
