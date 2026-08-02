@@ -580,6 +580,10 @@ function bukaMoveBarang() {
         let optionsTujuan = listRak.map(r => `<option value="${r.rak}">Rak ${r.rak}</option>`).join("");
         optionsTujuan += `<option value="NEW_RAK">+ Buat Rak Tujuan Baru...</option>`;
         elTujuan.innerHTML = optionsTujuan;
+
+        // Fokuskan ke Dropdown dan hubungkan dengan laser hardware HHT
+        elTujuan.focus();
+        hubungkanLaserHHTKeSelect("selectRakMoveTujuan");
     }
 
     document.getElementById("modalMove").style.display = "flex";
@@ -739,36 +743,114 @@ function bukaSetting() { document.getElementById("modalSetting").style.display =
 function tutupSetting() { document.getElementById("modalSetting").style.display = "none"; }
 
 // ==========================================================
-// 7. SCANNER & PENCARIAN BARANG
+// 7. SCANNER KAMERA & LASER HARDWARE HHT
 // ==========================================================
-function mulaiScan() {
-    document.getElementById("modalScan").style.display = "flex";
 
+/**
+ * Helper Universal untuk Membuka Kamera Belakang (Compatible untuk HP & HHT)
+ */
+function jalankanScannerKamera(onSuccessCallback) {
     if (!html5QrCode) {
         html5QrCode = new Html5Qrcode("reader");
     }
 
+    // Ambil daftar semua kamera yang ada di perangkat HHT/HP
+    Html5Qrcode.getCameras().then(devices => {
+        if (devices && devices.length > 0) {
+            // Cari kamera yang memiliki label 'back', 'rear', 'belakang', atau 'environment'
+            let backCamera = devices.find(device => {
+                const label = device.label.toLowerCase();
+                return label.includes("back") || label.includes("rear") || label.includes("belakang") || label.includes("environment");
+            });
+
+            // Jika tidak ada label khusus, pilih kamera terakhir dalam daftar (umumnya kamera belakang HHT)
+            let selectedCameraId = backCamera ? backCamera.id : devices[devices.length - 1].id;
+
+            html5QrCode.start(
+                selectedCameraId,
+                { fps: 10, qrbox: { width: 220, height: 220 } },
+                function (decodedText) {
+                    beep();
+                    tutupScan();
+                    onSuccessCallback(decodedText);
+                },
+                function (error) {}
+            ).catch(err => {
+                console.error("Gagal start kamera via ID:", err);
+                fallbackStartKamera(onSuccessCallback);
+            });
+        } else {
+            fallbackStartKamera(onSuccessCallback);
+        }
+    }).catch(err => {
+        console.error("Gagal getCameras:", err);
+        fallbackStartKamera(onSuccessCallback);
+    });
+}
+
+function fallbackStartKamera(onSuccessCallback) {
     html5QrCode.start(
-        { facingMode: "environment" },
+        { facingMode: { exact: "environment" } },
         { fps: 10, qrbox: { width: 220, height: 220 } },
         function (decodedText) {
             beep();
             tutupScan();
-
-            document.getElementById("hasilScanText").innerHTML = decodedText;
-            const barang = daftarBarang.find(item => String(item.barcode) === String(decodedText));
-
-            if (barang) {
-                tampilkanDetailBarang(barang);
-            } else {
-                alert("❌ Barang dengan barcode " + decodedText + " tidak ditemukan.");
-            }
+            onSuccessCallback(decodedText);
         },
-        function () {}
-    ).catch(err => {
-        console.error("Gagal membuka kamera:", err);
-        alert("Tidak dapat mengakses kamera. Pastikan izin kamera sudah diberikan.");
-        tutupScan();
+        function (error) {}
+    ).catch(() => {
+        html5QrCode.start(
+            { facingMode: "user" },
+            { fps: 10, qrbox: { width: 220, height: 220 } },
+            function (decodedText) {
+                beep();
+                tutupScan();
+                onSuccessCallback(decodedText);
+            },
+            function () {}
+        );
+    });
+}
+
+/**
+ * Menghubungkan Laser Hardware HHT Langsung ke Dropdown Select Rak (Tanpa Kamera)
+ */
+function hubungkanLaserHHTKeSelect(idSelect) {
+    const elSelect = document.getElementById(idSelect);
+    if (!elSelect) return;
+
+    let bufferScan = "";
+    let timerBuffer = null;
+
+    elSelect.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.keyCode === 13) {
+            e.preventDefault();
+            const hasilScanLaser = bufferScan.trim();
+            if (hasilScanLaser !== "") {
+                pilihAtauBuatOpsiRak(idSelect, hasilScanLaser);
+                bufferScan = "";
+            }
+        } else if (e.key.length === 1) {
+            bufferScan += e.key;
+            clearTimeout(timerBuffer);
+            timerBuffer = setTimeout(() => { bufferScan = ""; }, 150);
+        }
+    });
+}
+
+function mulaiScan() {
+    const elModalScan = document.getElementById("modalScan");
+    if (elModalScan) elModalScan.style.display = "flex";
+
+    jalankanScannerKamera(function (decodedText) {
+        document.getElementById("hasilScanText").innerHTML = decodedText;
+        const barang = daftarBarang.find(item => String(item.barcode) === String(decodedText));
+
+        if (barang) {
+            tampilkanDetailBarang(barang);
+        } else {
+            alert("❌ Barang dengan barcode " + decodedText + " tidak ditemukan.");
+        }
     });
 }
 
@@ -776,25 +858,9 @@ function scanUntukTambahBarang() {
     const elModalScan = document.getElementById("modalScan");
     if (elModalScan) elModalScan.style.display = "flex";
 
-    if (!html5QrCode) {
-        html5QrCode = new Html5Qrcode("reader");
-    }
-
-    html5QrCode.start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 220, height: 220 } },
-        function (decodedText) {
-            beep();
-            tutupScan();
-
-            const inputBarcode = document.getElementById("tambahBarcode");
-            if (inputBarcode) inputBarcode.value = decodedText;
-        },
-        function () {}
-    ).catch(err => {
-        console.error("Gagal membuka kamera:", err);
-        alert("📷 Tidak dapat mengakses kamera!");
-        tutupScan();
+    jalankanScannerKamera(function (decodedText) {
+        const inputBarcode = document.getElementById("tambahBarcode");
+        if (inputBarcode) inputBarcode.value = decodedText;
     });
 }
 
@@ -803,22 +869,8 @@ function scanBarcodeRak(targetElementId) {
     const elModalScan = document.getElementById("modalScan");
     if (elModalScan) elModalScan.style.display = "flex";
 
-    if (!html5QrCode) {
-        html5QrCode = new Html5Qrcode("reader");
-    }
-
-    html5QrCode.start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 220, height: 220 } },
-        function (decodedText) {
-            beep();
-            tutupScan();
-            pilihAtauBuatOpsiRak(targetSelectRakId, decodedText.trim());
-        },
-        function (error) {}
-    ).catch(err => {
-        alert("📷 Tidak dapat mengakses kamera!");
-        tutupScan();
+    jalankanScannerKamera(function (decodedText) {
+        pilihAtauBuatOpsiRak(targetSelectRakId, decodedText.trim());
     });
 }
 
