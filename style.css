@@ -194,3 +194,7 @@ body.dark-mode table {
 body.dark-mode table td {
     border-color: #333333 !important;
 }
+/* Hilangkan efek kilatan biru/grey saat tombol disentuh di HP */
+* {
+    -webkit-tap-highlight-color: transparent;
+}
