@@ -846,3 +846,100 @@ function resetHistory() {
         alert("🗑️ Riwayat transaksi berhasil dibersihkan!");
     }
 }
+// ============================================================
+// LOGIKA MULTI-RAK (BREAKDOWN PER LOKASI & BARIS)
+// ============================================================
+
+/**
+ * Mendapatkan total stok barang dari semua rak
+ */
+function hitungTotalStokBarang(barang) {
+    if (Array.isArray(barang.detailRak) && barang.detailRak.length > 0) {
+        return barang.detailRak.reduce((acc, curr) => acc + Number(curr.qty), 0);
+    }
+    return Number(barang.stok || 0);
+}
+
+/**
+ * Tampilkan Rincian Rak per Baris di Card Detail Barang
+ */
+function renderDetailRak(barang) {
+    const container = document.getElementById("rakDetailContainer");
+    if (!container) return;
+
+    // Normalisasi data rak lama/baru
+    let listRak = Array.isArray(barang.detailRak) ? barang.detailRak : [];
+    if (listRak.length === 0 && barang.lokasi) {
+        listRak = [{ rak: barang.lokasi, qty: Number(barang.stok || 0) }];
+    }
+
+    let html = `
+        <div class="rak-list-container" style="margin-top: 12px; background: #f8fafc; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0;">
+            <div style="font-size: 0.85rem; font-weight: bold; color: #475569; margin-bottom: 8px; display: flex; justify-content: space-between;">
+                <span>📍 Lokasi Rak & Rincian Stok:</span>
+                <button type="button" onclick="tambahBarisRakBaru()" style="background: #2563eb; color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">+ Tambah Rak</button>
+            </div>
+    `;
+
+    if (listRak.length === 0) {
+        html += `<div style="font-size: 12px; color: #94a3b8; text-align: center; padding: 6px;">Belum ada lokasi rak terdaftar.</div>`;
+    } else {
+        listRak.forEach((item, idx) => {
+            html += `
+                <div class="rak-item" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed #cbd5e1;">
+                    <span style="font-weight: 600; font-size: 13px; color: #334155;">📦 ${item.rak}</span>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="background: #dbeafe; color: #1e40af; padding: 2px 8px; border-radius: 6px; font-weight: bold; font-size: 12px;">${item.qty} pcs</span>
+                        <button type="button" onclick="hapusBarisRak(${idx})" style="background: #ef4444; color: white; border: none; padding: 2px 6px; border-radius: 4px; font-size: 10px; cursor: pointer;">🗑️</button>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    html += `</div>`;
+    container.innerHTML = html;
+}
+
+// Tambah Rak Baru Secara Langsung
+function tambahBarisRakBaru() {
+    if (!barangAktif) return;
+    
+    const rakBaru = prompt("Masukkan Nama Rak Baru (Contoh: Rak B-04):");
+    if (!rakBaru || !rakBaru.trim()) return;
+
+    if (!Array.isArray(barangAktif.detailRak)) {
+        barangAktif.detailRak = barangAktif.lokasi ? [{ rak: barangAktif.lokasi, qty: Number(barangAktif.stok || 0) }] : [];
+    }
+
+    const eksis = barangAktif.detailRak.find(r => r.rak.toLowerCase() === rakBaru.trim().toLowerCase());
+    if (eksis) return alert("⚠️ Rak ini sudah ada dalam daftar!");
+
+    const qtyAwal = Number(prompt("Masukkan Jumlah Stok di Rak Ini:", "0")) || 0;
+
+    barangAktif.detailRak.push({ rak: rakBaru.trim(), qty: qtyAwal });
+    barangAktif.stok = hitungTotalStokBarang(barangAktif);
+    barangAktif.lokasi = barangAktif.detailRak.map(r => r.rak).join(", ");
+
+    // Simpan Perubahan
+    localStorage.setItem("daftarBarang", JSON.stringify(daftarBarang));
+    syncKeGoogleSheet();
+    tampilkanDetailBarang(barangAktif);
+    alert(`✅ Rak ${rakBaru.trim()} berhasil ditambahkan!`);
+}
+
+// Hapus Baris Rak
+function hapusBarisRak(index) {
+    if (!barangAktif || !Array.isArray(barangAktif.detailRak)) return;
+    
+    const item = barangAktif.detailRak[index];
+    if (confirm(`Apakah Anda yakin ingin menghapus rak "${item.rak}"?`)) {
+        barangAktif.detailRak.splice(index, 1);
+        barangAktif.stok = hitungTotalStokBarang(barangAktif);
+        barangAktif.lokasi = barangAktif.detailRak.map(r => r.rak).join(", ");
+
+        localStorage.setItem("daftarBarang", JSON.stringify(daftarBarang));
+        syncKeGoogleSheet();
+        tampilkanDetailBarang(barangAktif);
+    }
+}
