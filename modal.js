@@ -259,7 +259,7 @@ function tampilkanModalAdmin(nomorWA = "6289680162073") {
             <div class="modal-body" style="margin: 15px 0; color: #475569; font-size: 0.95rem;">
                 <p>Mengalami kendala saat login atau masalah teknis pada aplikasi? Silakan hubungi admin via WhatsApp.</p>
                 <a href="${urlWA}" target="_blank" class="btn-wa-direct">
-                   🟢 Chat Admin via WhatsApp
+                    Chat Admin via WhatsApp
                 </a>
             </div>
             <div class="modal-footer">
