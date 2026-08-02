@@ -794,3 +794,39 @@ function pasangHHTEnter(idInput, aksi) {
         });
     }
 }
+// ============================================================
+// LOGIKA INGAT NIK (AUTOMATIC REMEMBER ME)
+// ============================================================
+
+// 1. OTOMATIS BACA NIK SAAT APLIKASI DIBUKA
+document.addEventListener('DOMContentLoaded', () => {
+    const savedNik = localStorage.getItem('saved_nik');
+    const inputNik = document.getElementById('loginNik');
+    const chkRemember = document.getElementById('rememberNik');
+
+    if (savedNik && inputNik) {
+        inputNik.value = savedNik;
+        if (chkRemember) {
+            chkRemember.checked = true; // Otomatis centang checkbox
+        }
+    }
+});
+
+// 2. SIMPAN / HAPUS NIK SAAT TOMBOL LOGIN DIKLIK
+function handleLogin(event) {
+    event.preventDefault();
+
+    const nikValue = document.getElementById('loginNik')?.value.trim();
+    const passwordValue = document.getElementById('loginPassword')?.value;
+    const isRememberChecked = document.getElementById('rememberNik')?.checked;
+
+    // Simpan atau Hapus NIK berdasarkan status centang
+    if (isRememberChecked && nikValue) {
+        localStorage.setItem('saved_nik', nikValue);
+    } else {
+        localStorage.removeItem('saved_nik');
+    }
+
+    // Lanjutkan ke alur verifikasi login utama Anda
+    console.log("Memproses login NIK:", nikValue);
+}
