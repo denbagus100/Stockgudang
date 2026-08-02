@@ -280,21 +280,27 @@ function tampilkanModalAdmin(nomorWA = "6289680162073") {
     modalContainer.innerHTML = modalHTML;
     bukaModal('modalAdmin');
 }
-
 /**
- * Toggle Password Visibility (Lihat/Sembunyikan Password)
- * @param {string} inputId 
- * @param {HTMLElement} iconElem 
+ * Toggle Password Visibility (Lihat / Sembunyikan Password)
  */
 function toggleLihatPassword(inputId, iconElem) {
-    const input = document.getElementById(inputId);
-    if (!input) return;
+    try {
+        // Cari input berdasarkan ID, jika tidak ketemu coba cari input type password di form
+        let input = document.getElementById(inputId);
+        if (!input) {
+            input = document.querySelector('input[type="password"]') || document.querySelector('input[type="text"]#inputPassword');
+        }
 
-    if (input.type === 'password') {
-        input.type = 'text';
-        if (iconElem) iconElem.textContent = '🙈';
-    } else {
-        input.type = 'password';
-        if (iconElem) iconElem.textContent = '👁️';
+        if (!input) return;
+
+        if (input.type === 'password') {
+            input.type = 'text';
+            if (iconElem) iconElem.innerHTML = '🙈';
+        } else {
+            input.type = 'password';
+            if (iconElem) iconElem.innerHTML = '🐵';
+        }
+    } catch (err) {
+        console.error("Gagal toggle password:", err);
     }
 }
