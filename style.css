@@ -1,14 +1,10 @@
-/* Kunci Background Utama Agar Tidak Ada Flash/Kedip Putih */
+/* ==========================================================
+   0. KUNCI BACKGROUND & ANTI-FLASH (ZERO FLICKER)
+   ========================================================== */
 html, body {
-    background-color: #0f172a !important; /* Warna gelap tema login */
+    background-color: #f5f7fb !important; /* Warna dasar terang untuk mencegah flicker hitam */
     margin: 0;
     padding: 0;
-    min-height: 100vh;
-}
-
-/* Kunci background aplikasi utama setelah login */
-#mainApp {
-    background-color: #f5f7fb;
     min-height: 100vh;
 }
 
@@ -197,7 +193,7 @@ body {
 }
 
 /* ==========================================================
-   4. FORM LOGIN, TOGGLE PASSWORD & CHECKBOX
+   4. FORM LOGIN, INPUT, SELECT & CHECKBOX
    ========================================================== */
 .password-input-wrapper {
     position: relative;
@@ -208,7 +204,7 @@ body {
 
 .password-input-wrapper input {
     width: 100%;
-    padding-right: 45px !important; /* Ruang agar teks tidak tertutup ikon */
+    padding-right: 45px !important;
     box-sizing: border-box;
 }
 
@@ -227,6 +223,23 @@ body {
     align-items: center;
     justify-content: center;
     -webkit-tap-highlight-color: transparent;
+}
+
+/* Dropdown Select Styling */
+select {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    font-size: 14px;
+    background-color: #ffffff;
+    color: #1e293b;
+    cursor: pointer;
+    -webkit-appearance: listbox !important;
+    appearance: auto !important;
+    pointer-events: auto !important;
+    user-select: auto !important;
+    touch-action: manipulation;
 }
 
 .form-options {
@@ -341,11 +354,12 @@ body.dark-mode .grid-menu .menu-card {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3) !important;
 }
 
-/* Input text di Dark Mode */
+/* Input text & Select di Dark Mode */
 body.dark-mode input[type="text"],
 body.dark-mode input[type="number"],
 body.dark-mode input[type="password"],
-body.dark-mode input[type="date"] {
+body.dark-mode input[type="date"],
+body.dark-mode select {
     background-color: #2a2a2a !important;
     color: #ffffff !important;
     border: 1px solid #444444 !important;
@@ -387,12 +401,4 @@ body.dark-mode .rak-nama {
 
 body.dark-mode .checkbox-container {
     color: #cbd5e1 !important;
-}
-/* Pastikan Select Input Bisa Diklik di Semua Perangkat */
-select {
-    -webkit-appearance: listbox !important;
-    appearance: auto !important;
-    pointer-events: auto !important;
-    user-select: auto !important;
-    touch-action: manipulation;
 }
