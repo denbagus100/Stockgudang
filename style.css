@@ -246,3 +246,66 @@ body.dark-mode table td {
     cursor: pointer;
     accent-color: #2563eb; /* Warna centang sesuai tema biru */
 }
+/* Banner Indikator Jaringan */
+.network-banner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.network-banner.online {
+    background-color: #dcfce7;
+    color: #166534;
+}
+
+.network-banner.offline {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+.sync-badge {
+    background-color: #f59e0b;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+}
+
+/* Tampilan List Breakdown Rak */
+.rak-list-container {
+    margin-top: 10px;
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 10px;
+    border: 1px solid #e2e8f0;
+}
+
+.rak-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px dashed #cbd5e1;
+}
+
+.rak-item:last-child {
+    border-bottom: none;
+}
+
+.rak-nama {
+    font-weight: 600;
+    color: #334155;
+}
+
+.rak-qty {
+    background: #e0f2fe;
+    color: #0369a1;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-weight: bold;
+}
