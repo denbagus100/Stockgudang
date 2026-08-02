@@ -198,3 +198,51 @@ body.dark-mode table td {
 * {
     -webkit-tap-highlight-color: transparent;
 }
+/* Wrapper Password & Ikon Mata */
+.password-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.password-input-wrapper input {
+    width: 100%;
+    padding-right: 45px !important; /* Ruang agar teks tidak tertutup ikon */
+    box-sizing: border-box;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 14px;
+    cursor: pointer;
+    user-select: none;
+    font-size: 1.2rem;
+    z-index: 2;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Checkbox Ingat NIK */
+.form-options {
+    display: flex;
+    align-items: center;
+    margin: 12px 0 18px 0;
+}
+
+.checkbox-container {
+    font-size: 0.9rem;
+    color: #475569;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.checkbox-container input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: #2563eb; /* Warna centang sesuai tema biru */
+}
