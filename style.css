@@ -1,3 +1,22 @@
+/* Kunci Background Utama Agar Tidak Ada Flash/Kedip Putih */
+html, body {
+    background-color: #0f172a !important; /* Warna gelap tema login */
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+}
+
+/* Kunci background aplikasi utama setelah login */
+#mainApp {
+    background-color: #f5f7fb;
+    min-height: 100vh;
+}
+
+/* Transisi Halus Saat Pop-Up / Modal Muncul */
+.modal, #halamanLogin {
+    transition: opacity 0.15s ease-in-out;
+}
+
 /* ==========================================================
    1. BASE STYLES & RESET
    ========================================================== */
