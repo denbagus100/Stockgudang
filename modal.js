@@ -184,23 +184,80 @@ window.addEventListener("click", function(e) {
         tutupTambahBarang();
     }
 });
+// ============================================================
+// MODAL.JS - Modul Pengelola Pop-Up & UI Interaktif WMS
+// ============================================================
+
+/**
+ * Membuka modal berdasarkan ID
+ * @param {string} modalId 
+ */
+function bukaModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'flex';
+        modal.classList.add('active');
+    }
+}
+
+/**
+ * Menutup modal berdasarkan ID
+ * @param {string} modalId 
+ */
+function tutupModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.remove('active');
+        modal.style.display = 'none';
+    }
+}
+// ============================================================
+// MODAL.JS - Modul Pengelola Pop-Up & UI Interaktif WMS
+// ============================================================
+
+/**
+ * Membuka modal berdasarkan ID
+ * @param {string} modalId 
+ */
+function bukaModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'flex';
+        modal.classList.add('active');
+    }
+}
+
+/**
+ * Menutup modal berdasarkan ID
+ * @param {string} modalId 
+ */
+function tutupModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.remove('active');
+        modal.style.display = 'none';
+    }
+}
+
 /**
  * Menampilkan Modal Bantuan / Direct WhatsApp Admin
- * Nomor Admin: 089680162073
+ * @param {string} nomorWA - Contoh: "6289680162073"
  */
 function tampilkanModalAdmin(nomorWA = "6289680162073") {
+    // Ambil NIK jika sudah login (opsional)
     const nikInput = document.getElementById('loginNik')?.value || '-';
     const pesanWA = encodeURIComponent(`Halo Admin, saya mengalami kendala pada aplikasi Sistem Gudang.\nNIK: ${nikInput}\nMohon bantuannya.`);
     const urlWA = `https://wa.me/${nomorWA}?text=${pesanWA}`;
 
+    // Buat HTML Modal
     const modalHTML = `
         <div class="modal-content-card">
             <div class="modal-header">
                 <h3>💬 Hubungi Admin Gudang</h3>
                 <button class="btn-close-x" onclick="tutupModal('modalAdmin')">&times;</button>
             </div>
-            <div class="modal-body">
-                <p>Mengalami kendala saat login atau masalah teknis pada aplikasi?</p>
+            <div class="modal-body" style="margin: 15px 0; color: #475569; font-size: 0.95rem;">
+                <p>Mengalami kendala saat login atau masalah teknis pada aplikasi? Silakan hubungi admin via WhatsApp.</p>
                 <a href="${urlWA}" target="_blank" class="btn-wa-direct">
                    🟢 Chat Admin via WhatsApp
                 </a>
@@ -211,6 +268,7 @@ function tampilkanModalAdmin(nomorWA = "6289680162073") {
         </div>
     `;
 
+    // Cek apakah kontainer modal sudah ada di body, kalau belum buat baru secara otomatis
     let modalContainer = document.getElementById('modalAdmin');
     if (!modalContainer) {
         modalContainer = document.createElement('div');
@@ -221,4 +279,22 @@ function tampilkanModalAdmin(nomorWA = "6289680162073") {
     
     modalContainer.innerHTML = modalHTML;
     bukaModal('modalAdmin');
+}
+
+/**
+ * Toggle Password Visibility (Lihat/Sembunyikan Password)
+ * @param {string} inputId 
+ * @param {HTMLElement} iconElem 
+ */
+function toggleLihatPassword(inputId, iconElem) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+
+    if (input.type === 'password') {
+        input.type = 'text';
+        if (iconElem) iconElem.textContent = '🙈';
+    } else {
+        input.type = 'password';
+        if (iconElem) iconElem.textContent = '👁️';
+    }
 }
