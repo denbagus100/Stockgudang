@@ -10,31 +10,41 @@
 </head>
 <body>
 
-<!-- HALAMAN LOGIN (MENDUKUNG AUTOFILL / SIMPAN PASSWORD BROWSER) -->
-<div id="halamanLogin" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0f172a; display: none; align-items: center; justify-content: center; z-index: 99999;">
+<!-- HALAMAN LOGIN (MENDUKUNG AUTOFILL / SIMPAN PASSWORD BROWSER + IKON MATA & INGAT NIK) -->
+<div id="halamanLogin" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0f172a; display: flex; align-items: center; justify-content: center; z-index: 99999;">
     <div style="background: white; width: 90%; max-width: 380px; padding: 25px; border-radius: 16px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.4);">
         <div style="font-size: 42px; margin-bottom: 8px;">📦</div>
         <h2 style="margin: 0 0 4px 0; color: #0f172a; font-size: 22px;">Sistem Gudang</h2>
         <p style="font-size: 13px; color: #64748b; margin-bottom: 20px;">Silakan masukkan NIK & Password Anda</p>
 
-        <!-- Tambahkan atribut action & method agar dikenali browser sebagai form login resmi -->
-        <form id="formLoginUtama" action="javascript:void(0);" method="POST" onsubmit="prosesLogin(event)">
-            <div style="margin-bottom: 12px; text-align: left;">
-                <label style="font-size: 12px; font-weight: bold; color: #475569;">NIK (Nomor Induk Karyawan)</label>
-                <!-- Tambahkan name="username" dan autocomplete="username" -->
-                <input type="text" id="inputNik" name="username" placeholder="Masukkan NIK" autocomplete="username" inputmode="numeric" style="width: 100%; padding: 10px; font-size: 14px; border-radius: 8px; border: 1px solid #cbd5e1; box-sizing: border-box; margin-top: 4px;" required>
+        <!-- FORM LOGIN BARU -->
+        <form id="formLogin" onsubmit="handleLogin(event)">
+            <div class="form-group" style="text-align: left; margin-bottom: 15px;">
+                <label for="loginNik" style="font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 5px;">NIK (Nomor Induk Karyawan)</label>
+                <input type="text" id="loginNik" placeholder="Masukkan NIK" required autocomplete="username" style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-size: 14px;">
             </div>
 
-            <div style="margin-bottom: 18px; text-align: left;">
-                <label style="font-size: 12px; font-weight: bold; color: #475569;">Password</label>
-                <!-- Tambahkan name="password" dan autocomplete="current-password" -->
-                <input type="password" id="inputPassword" name="password" placeholder="Masukkan Password" autocomplete="current-password" style="width: 100%; padding: 10px; font-size: 14px; border-radius: 8px; border: 1px solid #cbd5e1; box-sizing: border-box; margin-top: 4px;" required>
+            <div class="form-group" style="text-align: left; margin-bottom: 15px;">
+                <label for="loginPassword" style="font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 5px;">Password</label>
+                <div class="password-input-wrapper">
+                    <input type="password" id="loginPassword" placeholder="Masukkan Password" required autocomplete="current-password" style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-size: 14px;">
+                    <span class="toggle-password" onclick="toggleLihatPassword('loginPassword', this)">👁️</span>
+                </div>
             </div>
 
-            <button type="submit" style="width: 100%; background: #2563eb; color: white; border: none; padding: 11px; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer;">🔐 Masuk Sistem</button>
+            <div class="form-options">
+                <label class="checkbox-container">
+                    <input type="checkbox" id="rememberNik">
+                    <span class="checkmark"></span>
+                    Ingat NIK Saya
+                </label>
+            </div>
+
+            <button type="submit" class="btn-primary-login" style="width: 100%; padding: 12px; background: #2563eb; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer; margin-top: 10px;">🔑 Masuk Sistem</button>
         </form>
     </div>
 </div>
+
 
 <!-- PEMBUNGKUS UTAMA APLIKASI (SEMBUNYI SAAT AWAL REFRESH KARENA STYLE DISPLAY NONE) -->
 <div id="mainApp" style="display: none;">
