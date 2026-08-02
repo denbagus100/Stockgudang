@@ -30,14 +30,14 @@
                 <label for="loginNik" style="font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 5px;">NIK (Nomor Induk Karyawan)</label>
                 <input type="text" id="loginNik" placeholder="Masukkan NIK" required autocomplete="username" style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-size: 14px;">
             </div>
+<div class="form-group">
+    <label for="loginPassword">Password</label>
+    <div class="password-input-wrapper">
+        <input type="password" id="loginPassword" placeholder="Masukkan Password" required autocomplete="current-password">
+        <span class="toggle-password" onclick="toggleLihatPassword('loginPassword', this)">👁️</span>
+    </div>
+</div>
 
-            <div class="form-group" style="text-align: left; margin-bottom: 15px;">
-                <label for="loginPassword" style="font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 5px;">Password</label>
-                <div class="password-input-wrapper">
-                    <input type="password" id="loginPassword" placeholder="Masukkan Password" required autocomplete="current-password" style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-size: 14px;">
-                    <span class="toggle-password" onclick="toggleLihatPassword('loginPassword', this)">👁️</span>
-                </div>
-            </div>
 
             <div class="form-options">
                 <label class="checkbox-container">
