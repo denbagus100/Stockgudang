@@ -943,3 +943,40 @@ function hapusBarisRak(index) {
         tampilkanDetailBarang(barangAktif);
     }
 }
+// Opsi Pilihan Rak untuk Dropdown Stock IN/OUT
+function isiDropdownPilihanRak(selectElemId) {
+    const elSelect = document.getElementById(selectElemId);
+    if (!elSelect || !barangAktif) return;
+
+    let listRak = Array.isArray(barangAktif.detailRak) ? barangAktif.detailRak : [];
+    if (listRak.length === 0 && barangAktif.lokasi) {
+        listRak = [{ rak: barangAktif.lokasi, qty: Number(barangAktif.stok || 0) }];
+    }
+
+    let optionsHtml = listRak.map(r => `<option value="${r.rak}">${r.rak} (Stok: ${r.qty} pcs)</option>`).join("");
+    if (listRak.length === 0) {
+        optionsHtml = `<option value="Umum">Umum / Rak Utama</option>`;
+    }
+    elSelect.innerHTML = optionsHtml;
+}
+
+// Update Panggilan Buka Modal
+function bukaStockIn() {
+    if (!barangAktif) return alert("Pilih barang terlebih dahulu.");
+    document.getElementById("inNamaBarang").innerText = barangAktif.nama;
+    document.getElementById("inBarcode").innerText = barangAktif.barcode;
+    document.getElementById("inStok").innerText = barangAktif.stok;
+    
+    isiDropdownPilihanRak("selectRakIN");
+    document.getElementById("modalStockIn").style.display = "flex";
+}
+
+function bukaStockOut() {
+    if (!barangAktif) return alert("Pilih barang terlebih dahulu.");
+    document.getElementById("outNamaBarang").innerText = barangAktif.nama;
+    document.getElementById("outBarcode").innerText = barangAktif.barcode;
+    document.getElementById("outStok").innerText = barangAktif.stok;
+
+    isiDropdownPilihanRak("selectRakOUT");
+    document.getElementById("modalStockOut").style.display = "flex";
+}
