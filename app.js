@@ -77,7 +77,6 @@ function getDatabaseUser() {
     }
     return JSON.parse(data);
 }
-
 function cekStatusLogin() {
     const elHalamanLogin = document.getElementById("halamanLogin");
     const elMainApp = document.getElementById("mainApp");
@@ -85,13 +84,16 @@ function cekStatusLogin() {
     if (userAktifInfo && userAktifInfo.nik) {
         if (elHalamanLogin) elHalamanLogin.style.display = "none";
         if (elMainApp) elMainApp.style.display = "block";
+        document.body.style.backgroundColor = "#f5f7fb"; // Warna latar dashboard
         userAktif = userAktifInfo.nama || userAktifInfo.nik;
         terapkanAksesRole();
     } else {
         if (elMainApp) elMainApp.style.display = "none";
         if (elHalamanLogin) elHalamanLogin.style.display = "flex";
+        document.body.style.backgroundColor = "#0f172a"; // Warna latar login
     }
 }
+
 
 function muatNikTersimpan() {
     const savedNik = localStorage.getItem("saved_nik");
