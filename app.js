@@ -89,7 +89,6 @@ function cekStatusLogin() {
         if (elMainApp) elMainApp.style.display = "block";
         if (elNetworkBanner) elNetworkBanner.style.display = "flex";
         
-        document.documentElement.style.backgroundColor = "#f5f7fb";
         document.body.style.backgroundColor = "#f5f7fb";
         userAktif = userAktifInfo.nama || userAktifInfo.nik;
         terapkanAksesRole();
@@ -99,11 +98,10 @@ function cekStatusLogin() {
         if (elHalamanLogin) elHalamanLogin.style.display = "flex";
         if (elNetworkBanner) elNetworkBanner.style.display = "none";
         
-        document.documentElement.style.backgroundColor = "#0f172a";
         document.body.style.backgroundColor = "#0f172a";
     }
 
-    // Tampilkan layar tanpa flicker
+    // Munculkan layar secara instan & mulus
     document.body.classList.add("ready");
 }
 
