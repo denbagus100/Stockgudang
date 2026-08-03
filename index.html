@@ -411,6 +411,20 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="modal.js"></script>
 <script src="app.js"></script>
+<!-- CUSTOM MODAL PROMPT INPUT -->
+<div id="modalCustomPrompt" class="modal" style="display: none; align-items: center; justify-content: center; z-index: 99999;">
+    <div class="modal-content" style="max-width: 380px; text-align: left; background: #ffffff; padding: 20px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
+        <h3 id="customPromptTitle" style="margin: 0 0 8px 0; font-size: 16px; color: #1e293b;">Input Data</h3>
+        <p id="customPromptDesc" style="font-size: 13px; color: #64748b; margin-bottom: 12px; line-height: 1.4;"></p>
+        
+        <input type="text" id="customPromptInput" placeholder="Ketik di sini..." style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 14px; box-sizing: border-box; margin-bottom: 15px; outline: none;">
+        
+        <div style="display: flex; gap: 8px;">
+            <button type="button" id="customPromptBtnOk" style="flex: 1; background: #2563eb; color: white; border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer;">OK</button>
+            <button type="button" id="customPromptBtnBatal" style="flex: 1; background: #ef4444; color: white; border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer;">Batal</button>
+        </div>
+    </div>
+</div>
 
 </body>
 </html>
