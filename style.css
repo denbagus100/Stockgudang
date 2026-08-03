@@ -402,10 +402,9 @@ body.dark-mode .rak-nama {
 body.dark-mode .checkbox-container {
     color: #cbd5e1 !important;
 }
-/* TOAST NOTIFICATION CONTAINER */
 #toastContainer {
     position: fixed;
-    top: 20px;
+    bottom: 70px; /* Dipindah ke bawah, pas di atas navbar */
     left: 50%;
     transform: translateX(-50%);
     z-index: 999999;
@@ -436,11 +435,12 @@ body.dark-mode .checkbox-container {
 .toast.info    { background-color: #2563eb; } /* Biru */
 
 @keyframes fadeInToast {
-    from { opacity: 0; transform: translateY(-15px); }
+    from { opacity: 0; transform: translateY(15px); } /* Muncul dari bawah ke atas */
     to   { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes fadeOutToast {
     from { opacity: 1; transform: translateY(0); }
-    to   { opacity: 0; transform: translateY(-15px); }
+    to   { opacity: 0; transform: translateY(15px); } /* Hilang turun ke bawah */
 }
+
