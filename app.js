@@ -111,13 +111,14 @@ function getDatabaseUser() {
     return JSON.parse(data);
 }
 
-// Memuat data NIK & Password dari Google Sheets ke LocalStorage
+// Memuat data NIK & Password dari Google Sheets ke LocalStorage (Diperbaiki)
 function loadUserDariSheet() {
     if (!GOOGLE_SHEET_URL || !navigator.onLine) return;
 
     fetch(GOOGLE_SHEET_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" }, // Diubah ke application/json
+        redirect: "follow",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify({ token: API_SECRET_TOKEN, aksi: "getSemuaUser" })
     })
     .then(res => res.json())
@@ -129,7 +130,6 @@ function loadUserDariSheet() {
     })
     .catch(err => console.error("❌ Gagal memuat user dari Google Sheets:", err));
 }
-
 
 function cekStatusLogin() {
     const elHalamanLogin = document.getElementById("halamanLogin");
@@ -301,7 +301,8 @@ function loadDataStokDariSheet() {
 
     fetch(GOOGLE_SHEET_URL, {
         method: "POST",
-        headers: { "Content-Type": "text/plain" },
+        redirect: "follow",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify({ token: API_SECRET_TOKEN, aksi: "getSemuaBarang" })
     })
     .then(res => res.json())
@@ -324,8 +325,8 @@ function syncKeGoogleSheet() {
 
     fetch(GOOGLE_SHEET_URL, {
         method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
+        redirect: "follow",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify({
             token: API_SECRET_TOKEN,
             aksi: "syncSemuaBarang",
@@ -346,8 +347,8 @@ function kirimTransaksiKeGoogleSheet(transaksi) {
 
     fetch(GOOGLE_SHEET_URL, {
         method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
+        redirect: "follow",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify({
             token: API_SECRET_TOKEN,
             aksi: "catatTransaksi",
@@ -1124,7 +1125,8 @@ function tambahUserBaruPrompt() {
     if (navigator.onLine && GOOGLE_SHEET_URL) {
         fetch(GOOGLE_SHEET_URL, {
             method: "POST",
-            headers: { "Content-Type": "text/plain" },
+            redirect: "follow",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
             body: JSON.stringify({
                 token: API_SECRET_TOKEN,
                 aksi: "tambahUser",
