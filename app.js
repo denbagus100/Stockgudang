@@ -57,13 +57,16 @@ document.addEventListener("DOMContentLoaded", function () {
     // 1. Cek Status Login DULUAN agar tidak berbayang saat refresh
     cekStatusLogin();
 
-    // 2. Tampilkan Kata Motivasi Random
+    // 2. Load Data User NIK dari Google Sheets
+    loadUserDariSheet();
+
+    // 3. Tampilkan Kata Motivasi Random
     tampilkanMotivasiRandom();
 
-    // 3. Logika Ingat NIK
+    // 4. Logika Ingat NIK
     muatNikTersimpan();
 
-    // 4. Tampilkan Tanggal Hari Ini
+    // 5. Tampilkan Tanggal Hari Ini
     const sekarang = new Date();
     const elTanggal = document.getElementById("tanggal");
     if (elTanggal) {
@@ -72,19 +75,19 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // 5. Load Data Stok dari Google Sheets
+    // 6. Load Data Stok dari Google Sheets
     loadDataStokDariSheet();
 
-    // 6. Status Jaringan
+    // 7. Status Jaringan
     updateStatusJaringan();
 
-    // 7. Load Mode Gelap (Dark Mode)
+    // 8. Load Mode Gelap (Dark Mode)
     const isDarkMode = localStorage.getItem("darkMode") === "true";
     if (isDarkMode) document.body.classList.add("dark-mode");
     const toggleSwitch = document.getElementById("toggleDarkMode");
     if (toggleSwitch) toggleSwitch.checked = isDarkMode;
 
-    // 8. Pasang Scanner Laser HHT (Enter Otomatis)
+    // 9. Pasang Scanner Laser HHT (Enter Otomatis)
     pasangHHTEnter("keyword", cariBarang);
     pasangHHTEnter("tambahBarcode", () => document.getElementById("tambahNama")?.focus());
     pasangHHTEnter("jumlahIN", simpanStockIn);
@@ -106,6 +109,25 @@ function getDatabaseUser() {
         return defaultUser;
     }
     return JSON.parse(data);
+}
+
+// Memuat data NIK & Password dari Google Sheets ke LocalStorage
+function loadUserDariSheet() {
+    if (!GOOGLE_SHEET_URL || !navigator.onLine) return;
+
+    fetch(GOOGLE_SHEET_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain" },
+        body: JSON.stringify({ token: API_SECRET_TOKEN, aksi: "getSemuaUser" })
+    })
+    .then(res => res.json())
+    .then(res => {
+        if (res.status === "success" && res.data.length > 0) {
+            localStorage.setItem("databaseUser", JSON.stringify(res.data));
+            console.log(`✅ Berhasil memuat ${res.data.length} Akun NIK dari Google Sheets`);
+        }
+    })
+    .catch(err => console.error("❌ Gagal memuat user dari Google Sheets:", err));
 }
 
 function cekStatusLogin() {
@@ -278,6 +300,7 @@ function loadDataStokDariSheet() {
 
     fetch(GOOGLE_SHEET_URL, {
         method: "POST",
+        headers: { "Content-Type": "text/plain" },
         body: JSON.stringify({ token: API_SECRET_TOKEN, aksi: "getSemuaBarang" })
     })
     .then(res => res.json())
@@ -337,9 +360,11 @@ function kirimTransaksiKeGoogleSheet(transaksi) {
 function updateDashboardStats() {
     if (!daftarBarang) return;
 
+    // 1. Total Barang
     const elTotal = document.getElementById("totalBarang");
     if (elTotal) elTotal.innerHTML = daftarBarang.length;
 
+    // 2. Barang Hampir Expired (<= 30 Hari)
     const skrg = new Date();
     const totalExpired = daftarBarang.filter(item => {
         if (!item.expired || item.expired === "-") return false;
@@ -351,15 +376,21 @@ function updateDashboardStats() {
 
     const elExp = document.getElementById("expired");
     if (elExp) elExp.innerHTML = totalExpired;
+
+    // 3. Barang Stok Minimum / Hampir Habis
+    const totalStokMin = daftarBarang.filter(item => {
+        const batasMin = item.stokMin !== undefined ? Number(item.stokMin) : 5;
+        return Number(item.stok || 0) <= batasMin;
+    }).length;
+
+    const elStokMin = document.getElementById("stokMin");
+    if (elStokMin) elStokMin.innerHTML = totalStokMin;
 }
 
 // ==========================================================
 // 4. LOGIKA MULTI-RAK (AUTO-SPLIT KOMA & PEMBAGIAN STOK)
 // ==========================================================
 
-/**
- * Memisah Lokasi Teks Koma (misal: "A, B") menjadi List Rak Individual
- */
 function dapatkanListRak(barang) {
     if (!barang) return [];
 
@@ -389,9 +420,6 @@ function dapatkanListRak(barang) {
     return barang.detailRak;
 }
 
-/**
- * Render Rincian Rak Per Baris di Card Detail Barang
- */
 function renderDetailRak(barang) {
     const container = document.getElementById("rakDetailContainer");
     if (!container) return;
@@ -422,9 +450,6 @@ function renderDetailRak(barang) {
     container.innerHTML = html;
 }
 
-/**
- * Mengisi Dropdown Pilihan Rak
- */
 function isiDropdownPilihanRak(selectElemId) {
     const elSelect = document.getElementById(selectElemId);
     if (!elSelect || !barangAktif) return;
@@ -610,7 +635,6 @@ function bukaMoveBarang() {
         optionsTujuan += `<option value="NEW_RAK">+ Buat Rak Tujuan Baru...</option>`;
         elTujuan.innerHTML = optionsTujuan;
 
-        // Fokuskan ke Dropdown dan hubungkan dengan laser hardware HHT
         elTujuan.focus();
         hubungkanLaserHHTKeSelect("selectRakMoveTujuan");
     }
@@ -693,7 +717,7 @@ function simpanMoveBarang() {
 }
 
 // ==========================================================
-// 6. MODAL POPUP HELPERS
+// 6. MODAL POPUP HELPERS & FILTER STOK MINIMUM
 // ==========================================================
 function bukaStockIn() {
     if (!barangAktif) return alert("Pilih barang terlebih dahulu.");
@@ -747,6 +771,17 @@ function bukaExpiredBarang() {
 }
 function tutupExpiredBarang() { document.getElementById("modalExpired").style.display = "none"; }
 
+// Buka Modal Pop-up Daftar Barang Hampir Habis / Re-Order
+function bukaBarangStokMin() {
+    const listStokMin = daftarBarang.filter(item => {
+        const batasMin = item.stokMin !== undefined ? Number(item.stokMin) : 5;
+        return Number(item.stok || 0) <= batasMin;
+    });
+
+    bukaDaftarStok();
+    renderTabelStok(listStokMin);
+}
+
 function bukaHistory() {
     const elContainer = document.getElementById("historyTransaksi");
     if (!elContainer) return;
@@ -775,9 +810,6 @@ function tutupSetting() { document.getElementById("modalSetting").style.display 
 // 7. SCANNER KAMERA & LASER HARDWARE HHT
 // ==========================================================
 
-/**
- * Helper Universal untuk Membuka Kamera Belakang (Compatible untuk HP & HHT)
- */
 function jalankanScannerKamera(onSuccessCallback) {
     if (!html5QrCode) {
         html5QrCode = new Html5Qrcode("reader");
@@ -838,9 +870,6 @@ function fallbackStartKamera(onSuccessCallback) {
     });
 }
 
-/**
- * Menghubungkan Laser Hardware HHT Langsung ke Dropdown Select Rak (Tanpa Kamera)
- */
 function hubungkanLaserHHTKeSelect(idSelect) {
     const elSelect = document.getElementById(idSelect);
     if (!elSelect) return;
@@ -880,9 +909,6 @@ function mulaiScan() {
     });
 }
 
-/**
- * Pengecekan Otomatis (Auto-Fill) saat Barcode di-scan atau diketik di Modal Tambah Barang
- */
 function cekAutoFillTambahBarang(barcode) {
     if (!barcode) return;
 
@@ -891,7 +917,6 @@ function cekAutoFillTambahBarang(barcode) {
     const inputLokasi = document.getElementById("tambahLokasi");
     const inputExpired = document.getElementById("tambahExpired");
 
-    // Cari apakah barcode sudah terdaftar di stok
     const barangAda = daftarBarang.find(item => String(item.barcode).trim() === String(barcode).trim());
 
     if (barangAda) {
@@ -902,7 +927,6 @@ function cekAutoFillTambahBarang(barcode) {
             inputExpired.value = barangAda.expired;
         }
 
-        // Kursor langsung otomatis ke Stok Awal
         const inputStok = document.getElementById("tambahStok");
         if (inputStok) inputStok.focus();
     }
@@ -976,9 +1000,6 @@ function cariBarang() {
     tampilkanDetailBarang(barang);
 }
 
-/**
- * Tampilkan Pop-Up Modal Detail Barang
- */
 function tampilkanDetailBarang(barang) {
     barangAktif = barang;
 
@@ -991,14 +1012,10 @@ function tampilkanDetailBarang(barang) {
 
     renderDetailRak(barang);
 
-    // Tampilkan Modal Pop-up secara langsung di tengah layar
     const elDetail = document.getElementById("detailBarang");
     if (elDetail) elDetail.style.display = "flex";
 }
 
-/**
- * Tutup Modal Detail Barang
- */
 function tutupDetailBarang() {
     const elDetail = document.getElementById("detailBarang");
     if (elDetail) elDetail.style.display = "none";
@@ -1024,9 +1041,25 @@ function tambahUserBaruPrompt() {
 
     const roleBaru = confirm("Jadikan akun ini ADMIN?\n[OK] = Admin | [Batal] = Staff") ? "admin" : "staff";
 
-    users.push({ nik: nikBaru.trim(), password: passBaru.trim(), role: roleBaru, nama: namaBaru.trim() });
+    const userBaru = { nik: nikBaru.trim(), password: passBaru.trim(), role: roleBaru, nama: namaBaru.trim() };
+
+    users.push(userBaru);
     localStorage.setItem("databaseUser", JSON.stringify(users));
-    alert(`✅ User ${namaBaru} berhasil ditambahkan!`);
+
+    // Kirim langsung ke Google Sheets
+    if (navigator.onLine && GOOGLE_SHEET_URL) {
+        fetch(GOOGLE_SHEET_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain" },
+            body: JSON.stringify({
+                token: API_SECRET_TOKEN,
+                aksi: "tambahUser",
+                user: userBaru
+            })
+        });
+    }
+
+    alert(`✅ User ${namaBaru} berhasil ditambahkan dan disinkronkan ke Google Sheets!`);
 }
 
 function kelolaDanHapusUser() {
@@ -1070,7 +1103,6 @@ function bukaTambahBarang(defaultBarcode = "") {
     if (inputBarcode) {
         inputBarcode.focus();
 
-        // Listener otomatis saat barcode diketik atau ditembak laser HHT
         inputBarcode.oninput = function () {
             cekAutoFillTambahBarang(this.value.trim());
         };
@@ -1093,7 +1125,6 @@ function simpanBarangBaru() {
 
     if (!barcode || !nama || isNaN(stok) || stok < 0) return alert("⚠️ Barcode, Nama, dan Stok Wajib Diisi.");
 
-    // Cek apakah barang sudah ada di database untuk memperbarui stok atau menambah barang baru
     let barangExisting = daftarBarang.find(item => String(item.barcode).trim() === barcode);
 
     if (barangExisting) {
@@ -1102,7 +1133,6 @@ function simpanBarangBaru() {
         if (expired && expired !== "-") barangExisting.expired = expired;
         if (sku && sku !== "-") barangExisting.sku = sku;
         
-        // Update rincian rak
         const listRak = dapatkanListRak(barangExisting);
         let targetRak = listRak.find(r => r.rak.toLowerCase() === (lokasi || "Utama / Transit").toLowerCase());
         if (targetRak) {
