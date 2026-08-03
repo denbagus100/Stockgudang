@@ -117,7 +117,7 @@ function loadUserDariSheet() {
 
     fetch(GOOGLE_SHEET_URL, {
         method: "POST",
-        headers: { "Content-Type": "text/plain" },
+        headers: { "Content-Type": "application/json" }, // Diubah ke application/json
         body: JSON.stringify({ token: API_SECRET_TOKEN, aksi: "getSemuaUser" })
     })
     .then(res => res.json())
@@ -129,6 +129,7 @@ function loadUserDariSheet() {
     })
     .catch(err => console.error("❌ Gagal memuat user dari Google Sheets:", err));
 }
+
 
 function cekStatusLogin() {
     const elHalamanLogin = document.getElementById("halamanLogin");
