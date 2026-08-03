@@ -75,11 +75,22 @@
         <span id="tanggal"></span>
     </header>
         
+    <!-- 1. PENCARIAN BARANG -->
     <div class="search-box" style="margin-top: 16px; padding: 0 16px; display: flex; gap: 8px;">
         <input type="text" id="keyword" placeholder="Cari Barcode / SKU / Nama Barang" style="flex: 1;">
         <button type="button" onclick="cariBarang()">🔍 Cari</button>
     </div>
 
+    <!-- 2. WIDGET KATA MOTIVASI RANDOM (POSISI ATAS) -->
+    <div class="card" style="margin: 12px 16px 8px 16px; text-align: center; background: linear-gradient(135deg, #1e293b, #0f172a); color: #ffffff; padding: 14px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.12);">
+        <div style="font-size: 18px; margin-bottom: 2px;">💡</div>
+        <p id="teksMotivasi" style="font-size: 12px; font-style: italic; font-weight: 500; margin: 0 0 4px 0; color: #f1f5f9; line-height: 1.4;">
+            "Semangat bekerja! Ketelitian gudang adalah kunci keberhasilan tim."
+        </p>
+        <small id="penulisMotivasi" style="font-size: 10px; color: #94a3b8; font-weight: 600;">— Tim Operasional Gudang</small>
+    </div>
+
+    <!-- 3. CARD TOTAL BARANG & EXPIRED (POSISI TENGAH) -->
     <div class="info-card">
         <h3>Total Barang</h3>
         <h1 id="totalBarang">0</h1>
@@ -90,7 +101,8 @@
         <h1 id="expired">0</h1>
     </div>
 
-    <div class="grid-menu">
+    <!-- 4. GRID MENU UTAMA (POSISI BAWAH) -->
+    <div class="grid-menu" style="margin-top: 12px;">
         <button type="button" onclick="bukaDaftarStok()">📊<br>Stok</button>
         <button type="button" onclick="bukaExpiredBarang()">⚠️<br>Expired</button>
         <button type="button" onclick="bukaHistory()">📄<br>History</button>
@@ -101,7 +113,8 @@
         </button>
     </div>
 
-    <div class="khusus-admin" style="background: #f0fdf4; padding: 12px; border-radius: 12px; margin: 12px 16px; border: 1px solid #bbf7d0; text-align: left;">
+    <!-- 5. KELOLA USER (KHUSUS ADMIN) -->
+    <div class="khusus-admin" style="background: #f0fdf4; padding: 12px; border-radius: 12px; margin: 12px 16px 85px 16px; border: 1px solid #bbf7d0; text-align: left;">
         <p style="font-size: 13px; color: #166534; margin-bottom: 8px;"><b>👤 Kelola Akun & NIK:</b></p>
         <div style="display: flex; gap: 8px;">
             <button type="button" onclick="tambahUserBaruPrompt()" style="flex: 1; background: #16a34a; color: white; border: none; padding: 9px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px;">
