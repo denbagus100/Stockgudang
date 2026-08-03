@@ -111,7 +111,7 @@ function getDatabaseUser() {
     return JSON.parse(data);
 }
 
-// Memuat data NIK & Password dari Google Sheets ke LocalStorage (Diperbaiki)
+// Memuat data NIK & Password dari Google Sheets ke LocalStorage
 function loadUserDariSheet() {
     if (!GOOGLE_SHEET_URL || !navigator.onLine) return;
 
@@ -228,16 +228,18 @@ function terapkanAksesRole() {
 }
 
 function prosesLogout() {
-    if (confirm("Apakah Anda yakin ingin keluar dari sistem?")) {
-        localStorage.removeItem("userAktifInfo");
-        userAktifInfo = null;
-        userAktif = "";
+    bukaCustomConfirm("Konfirmasi Keluar", "Apakah Anda yakin ingin keluar dari sistem?", function(ya) {
+        if (ya) {
+            localStorage.removeItem("userAktifInfo");
+            userAktifInfo = null;
+            userAktif = "";
 
-        const modalSetting = document.getElementById("modalSetting");
-        if (modalSetting) modalSetting.style.display = "none";
+            const modalSetting = document.getElementById("modalSetting");
+            if (modalSetting) modalSetting.style.display = "none";
 
-        cekStatusLogin();
-    }
+            cekStatusLogin();
+        }
+    });
 }
 
 // ==========================================================
@@ -500,7 +502,6 @@ function tambahBarisRakBaru() {
     });
 }
 
-
 function hapusBarisRak(index) {
     if (!barangAktif) return;
     const listRak = dapatkanListRak(barangAktif);
@@ -510,16 +511,19 @@ function hapusBarisRak(index) {
     }
 
     const item = listRak[index];
-    if (confirm(`Apakah Anda yakin ingin menghapus Rak "${item.rak}"?`)) {
-        barangAktif.detailRak.splice(index, 1);
-        barangAktif.stok = barangAktif.detailRak.reduce((acc, curr) => acc + Number(curr.qty), 0);
-        barangAktif.lokasi = barangAktif.detailRak.map(r => r.rak).join(", ");
+    bukaCustomConfirm("Konfirmasi Hapus", `Apakah Anda yakin ingin menghapus Rak "${item.rak}"?`, function(ya) {
+        if (ya) {
+            barangAktif.detailRak.splice(index, 1);
+            barangAktif.stok = barangAktif.detailRak.reduce((acc, curr) => acc + Number(curr.qty), 0);
+            barangAktif.lokasi = barangAktif.detailRak.map(r => r.rak).join(", ");
 
-        localStorage.setItem("daftarBarang", JSON.stringify(daftarBarang));
-        if (typeof syncKeGoogleSheet === "function") syncKeGoogleSheet();
+            localStorage.setItem("daftarBarang", JSON.stringify(daftarBarang));
+            if (typeof syncKeGoogleSheet === "function") syncKeGoogleSheet();
 
-        tampilkanDetailBarang(barangAktif);
-    }
+            tampilkanDetailBarang(barangAktif);
+            showToast("🗑️ Rak berhasil dihapus!", "success");
+        }
+    });
 }
 
 // ==========================================================
@@ -667,11 +671,16 @@ function simpanMoveBarang() {
     }
 
     if (rakTujuan === "NEW_RAK") {
-        const inputBaru = prompt("Masukkan Nama Rak Tujuan Baru (Contoh: B atau C-01):");
-        if (!inputBaru || !inputBaru.trim()) return showToast("⚠️ Nama rak tujuan tidak boleh kosong!", "warning");
-        rakTujuan = inputBaru.trim();
+        bukaCustomPrompt("Rak Tujuan Baru", "Masukkan Nama Rak Tujuan Baru (Contoh: B atau C-01):", "Contoh: B", "text", function(inputBaru) {
+            if (!inputBaru || !inputBaru.trim()) return showToast("⚠️ Nama rak tujuan tidak boleh kosong!", "warning");
+            eksekusiPindahRakLanjutan(rakAsal, inputBaru.trim(), qtyPindah);
+        });
+        return;
     }
+    eksekusiPindahRakLanjutan(rakAsal, rakTujuan, qtyPindah);
+}
 
+function eksekusiPindahRakLanjutan(rakAsal, rakTujuan, qtyPindah) {
     if (rakAsal === rakTujuan) {
         return showToast("⚠️ Rak Asal dan Rak Tujuan tidak boleh sama!", "warning");
     }
@@ -683,7 +692,6 @@ function simpanMoveBarang() {
         return showToast(`⚠️ Stok di Rak ${rakAsal} tidak mencukupi!`, "error");
     }
 
-    // Process Move
     itemAsal.qty -= qtyPindah;
     let itemTujuan = listRak.find(r => r.rak === rakTujuan);
     if (itemTujuan) {
@@ -1107,60 +1115,59 @@ function tutupDetailBarang() {
 function tambahUserBaruPrompt() {
     if (!userAktifInfo || userAktifInfo.role !== "admin") return showToast("⛔ Hanya Admin yang bisa menambah NIK baru.", "error");
 
-    const nikBaru = prompt("Masukkan NIK Karyawan Baru:");
-    if (!nikBaru || !nikBaru.trim()) return;
+    bukaCustomPrompt("Tambah NIK Baru", "Masukkan NIK Karyawan Baru:", "Contoh: 1002", "text", function(nikBaru) {
+        if (!nikBaru || !nikBaru.trim()) return;
 
-    let users = getDatabaseUser();
-    if (users.find(u => String(u.nik) === nikBaru.trim())) return showToast("⚠️ NIK sudah terdaftar!", "warning");
+        let users = getDatabaseUser();
+        if (users.find(u => String(u.nik) === nikBaru.trim())) return showToast("⚠️ NIK sudah terdaftar!", "warning");
 
-    const namaBaru = prompt("Masukkan Nama Lengkap Karyawan:");
-    if (!namaBaru || !namaBaru.trim()) return;
+        bukaCustomPrompt("Nama Karyawan", "Masukkan Nama Lengkap Karyawan:", "Contoh: Budi Santoso", "text", function(namaBaru) {
+            if (!namaBaru || !namaBaru.trim()) return;
 
-    const passBaru = prompt("Masukkan Password:");
-    if (!passBaru || !passBaru.trim()) return;
+            bukaCustomPrompt("Password Karyawan", "Masukkan Password:", "Password akun...", "password", function(passBaru) {
+                if (!passBaru || !passBaru.trim()) return;
 
-    const roleBaru = confirm("Jadikan akun ini ADMIN?\n[OK] = Admin | [Batal] = Staff") ? "admin" : "staff";
+                bukaCustomConfirm("Level Akun", "Jadikan akun ini sebagai ADMIN?\n[OK] = Admin | [Batal] = Staff", function(isAdmin) {
+                    const roleBaru = isAdmin ? "admin" : "staff";
+                    const userBaru = { nik: nikBaru.trim(), password: passBaru.trim(), role: roleBaru, nama: namaBaru.trim() };
 
-    const userBaru = { nik: nikBaru.trim(), password: passBaru.trim(), role: roleBaru, nama: namaBaru.trim() };
+                    users.push(userBaru);
+                    localStorage.setItem("databaseUser", JSON.stringify(users));
 
-    users.push(userBaru);
-    localStorage.setItem("databaseUser", JSON.stringify(users));
+                    if (navigator.onLine && GOOGLE_SHEET_URL) {
+                        fetch(GOOGLE_SHEET_URL, {
+                            method: "POST",
+                            redirect: "follow",
+                            headers: { "Content-Type": "text/plain;charset=utf-8" },
+                            body: JSON.stringify({ token: API_SECRET_TOKEN, aksi: "tambahUser", user: userBaru })
+                        });
+                    }
 
-    if (navigator.onLine && GOOGLE_SHEET_URL) {
-        fetch(GOOGLE_SHEET_URL, {
-            method: "POST",
-            redirect: "follow",
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify({
-                token: API_SECRET_TOKEN,
-                aksi: "tambahUser",
-                user: userBaru
-            })
+                    showToast(`✅ User ${namaBaru.trim()} berhasil ditambahkan!`, "success");
+                });
+            });
         });
-    }
-
-    showToast(`✅ User ${namaBaru} berhasil ditambahkan!`, "success");
+    });
 }
 
 function kelolaDanHapusUser() {
     if (!userAktifInfo || userAktifInfo.role !== "admin") return showToast("⛔ Hanya Admin yang bisa menghapus user.", "error");
 
     let users = getDatabaseUser();
-    let pesan = "📋 DAFTAR NIK TERDAFTAR:\n";
-    users.forEach((u, i) => { pesan += `${i + 1}. NIK: ${u.nik} | ${u.nama} (${u.role.toUpperCase()})\n`; });
-    pesan += "\nMasukkan NIK yang ingin DIHAPUS:";
+    let daftarNiks = users.map((u, i) => `${i + 1}. NIK: ${u.nik} | ${u.nama} (${u.role.toUpperCase()})`).join("\n");
 
-    const nikHapus = prompt(pesan);
-    if (!nikHapus || !nikHapus.trim()) return;
+    bukaCustomPrompt("Hapus NIK Karyawan", `Daftar NIK:\n${daftarNiks}\n\nMasukkan NIK yang ingin DIHAPUS:`, "Ketik NIK...", "text", function(nikHapus) {
+        if (!nikHapus || !nikHapus.trim()) return;
 
-    const index = users.findIndex(u => String(u.nik) === nikHapus.trim());
-    if (index !== -1) {
-        users.splice(index, 1);
-        localStorage.setItem("databaseUser", JSON.stringify(users));
-        showToast("✅ NIK berhasil dihapus!", "success");
-    } else {
-        showToast("❌ NIK tidak ditemukan.", "error");
-    }
+        const index = users.findIndex(u => String(u.nik) === nikHapus.trim());
+        if (index !== -1) {
+            users.splice(index, 1);
+            localStorage.setItem("databaseUser", JSON.stringify(users));
+            showToast("✅ NIK berhasil dihapus!", "success");
+        } else {
+            showToast("❌ NIK tidak ditemukan.", "error");
+        }
+    });
 }
 
 function bukaTambahBarang(defaultBarcode = "") {
@@ -1347,11 +1354,13 @@ function switchDarkMode(isDark) {
 }
 
 function resetHistory() {
-    if (confirm("Yakin ingin menghapus seluruh riwayat transaksi di HP ini?")) {
-        historyTransaksi = [];
-        localStorage.removeItem("historyTransaksi");
-        showToast("🗑️ Riwayat transaksi berhasil dibersihkan!", "info");
-    }
+    bukaCustomConfirm("Konfirmasi", "Yakin ingin menghapus seluruh riwayat transaksi di HP ini?", function(ya) {
+        if (ya) {
+            historyTransaksi = [];
+            localStorage.removeItem("historyTransaksi");
+            showToast("🗑️ Riwayat transaksi berhasil dibersihkan!", "info");
+        }
+    });
 }
 
 // ==========================================================
@@ -1393,7 +1402,10 @@ if ('serviceWorker' in navigator) {
             .catch(err => console.error('❌ Gagal daftar Service Worker:', err));
     });
 }
-// CUSTOM PROMPT PENGGANTI POP-UP BROWSER
+
+// ==========================================================
+// CUSTOM PROMPT & CONFIRM MODAL HELPERS
+// ==========================================================
 function bukaCustomPrompt(judul, deskripsi, placeholder, tipeInput = "text", callback) {
     const modal = document.getElementById("modalCustomPrompt");
     const elTitle = document.getElementById("customPromptTitle");
@@ -1409,24 +1421,22 @@ function bukaCustomPrompt(judul, deskripsi, placeholder, tipeInput = "text", cal
     elInput.value = "";
     elInput.type = tipeInput;
     elInput.placeholder = placeholder;
+    elInput.style.display = "block";
 
     modal.style.display = "flex";
     setTimeout(() => elInput.focus(), 100);
 
-    // Hapus event listener lama agar tidak menumpuk
     const newBtnOk = btnOk.cloneNode(true);
     const newBtnBatal = btnBatal.cloneNode(true);
     btnOk.parentNode.replaceChild(newBtnOk, btnOk);
     btnBatal.parentNode.replaceChild(newBtnBatal, btnBatal);
 
-    // Event saat klik OK
     document.getElementById("customPromptBtnOk").onclick = function () {
         const hasil = elInput.value.trim();
         modal.style.display = "none";
         if (callback) callback(hasil);
     };
 
-    // Event saat tekan Enter di input
     elInput.onkeydown = function (e) {
         if (e.key === "Enter" || e.keyCode === 13) {
             e.preventDefault();
@@ -1434,9 +1444,42 @@ function bukaCustomPrompt(judul, deskripsi, placeholder, tipeInput = "text", cal
         }
     };
 
-    // Event saat klik Batal
     document.getElementById("customPromptBtnBatal").onclick = function () {
         modal.style.display = "none";
         if (callback) callback(null);
+    };
+}
+
+function bukaCustomConfirm(judul, pesan, callback) {
+    const modal = document.getElementById("modalCustomPrompt");
+    const elTitle = document.getElementById("customPromptTitle");
+    const elDesc = document.getElementById("customPromptDesc");
+    const elInput = document.getElementById("customPromptInput");
+    const btnOk = document.getElementById("customPromptBtnOk");
+    const btnBatal = document.getElementById("customPromptBtnBatal");
+
+    if (!modal) return;
+
+    elTitle.innerText = judul;
+    elDesc.innerText = pesan;
+    elInput.style.display = "none";
+
+    modal.style.display = "flex";
+
+    const newBtnOk = btnOk.cloneNode(true);
+    const newBtnBatal = btnBatal.cloneNode(true);
+    btnOk.parentNode.replaceChild(newBtnOk, btnOk);
+    btnBatal.parentNode.replaceChild(newBtnBatal, btnBatal);
+
+    document.getElementById("customPromptBtnOk").onclick = function () {
+        elInput.style.display = "block";
+        modal.style.display = "none";
+        if (callback) callback(true);
+    };
+
+    document.getElementById("customPromptBtnBatal").onclick = function () {
+        elInput.style.display = "block";
+        modal.style.display = "none";
+        if (callback) callback(false);
     };
 }
