@@ -1287,3 +1287,34 @@ if ('serviceWorker' in navigator) {
             .catch(err => console.error('❌ Gagal daftar Service Worker:', err));
     });
 }
+// ==========================================================
+// TOAST NOTIFICATION & VIBRATION HELPER
+// ==========================================================
+function showToast(pesan, tipe = "success", durasi = 2200) {
+    const container = document.getElementById("toastContainer");
+    if (!container) return alert(pesan); // Fallback ke alert jika container tidak ada
+
+    // 1. Jalankan Fitur Getar HP (Jika didukung oleh HHT/HP)
+    if ("vibrate" in navigator) {
+        if (tipe === "error") {
+            navigator.vibrate([100, 50, 100]); // Getar 2x untuk Error
+        } else {
+            navigator.vibrate(80); // Getar pendek 1x untuk Sukses
+        }
+    }
+
+    // 2. Buat Elemen Toast
+    const toast = document.createElement("div");
+    toast.className = `toast ${tipe}`;
+    toast.innerHTML = `<span>${pesan}</span>`;
+
+    container.appendChild(toast);
+
+    // 3. Hilangkan Otomatis Setelah Durasi Selesai
+    setTimeout(() => {
+        toast.style.animation = "fadeOutToast 0.25s ease-in forwards";
+        setTimeout(() => {
+            if (toast.parentNode) toast.parentNode.removeChild(toast);
+        }, 250);
+    }, durasi);
+}
