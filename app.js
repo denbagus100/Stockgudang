@@ -306,7 +306,11 @@ function loadDataStokDariSheet() {
     .then(res => res.json())
     .then(res => {
         if (res.status === "success" && res.data.length > 0) {
-            daftarBarang = res.data;
+            // Normalisasi awal untuk memastikan atribut barcode selalu string rapi
+            daftarBarang = res.data.map(item => ({
+                ...item,
+                barcode: String(item.barcode).trim()
+            }));
             localStorage.setItem("daftarBarang", JSON.stringify(daftarBarang));
             updateDashboardStats();
             console.log(`✅ Berhasil memuat ${res.data.length} barang dari Google Sheets`);
@@ -1285,10 +1289,12 @@ function filterTabelStok() {
 }
 
 function pilihBarangDariTabel(barcode) {
-    const barang = daftarBarang.find(b => String(b.barcode) === String(barcode));
+    const barang = daftarBarang.find(b => cocokkanBarcode(b.barcode, barcode));
     if (barang) {
         tutupDaftarStok();
         tampilkanDetailBarang(barang);
+    } else {
+        showToast("❌ Barang tidak ditemukan", "error");
     }
 }
 
