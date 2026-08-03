@@ -9,7 +9,7 @@ window.addEventListener('error', function (e) {
 // ==========================================================
 // 1. DEKLARASI VARIABEL GLOBAL & INTEGRASI GOOGLE SHEETS
 // ==========================================================
-const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycby2nv7rvaca5oci1cmKBsuLJ07rIlw2lFIzY6AqTqrxw05sZBvhAJ_UgpduflR7NsuD/exec";
+const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbxE1tcIPeiwWYPaZmQAsiWCEBrBfkypR4OCnFbVNEWcMHKYZ6SIbrOzX2Tao28HQzNe/exec";
 const API_SECRET_TOKEN = "WMS_SECRET_TOKEN_2026_SECURE";
 
 let barangAktif = null;
