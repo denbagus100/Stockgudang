@@ -724,4 +724,665 @@ function simpanMoveBarang() {
 // ==========================================================
 function bukaStockIn() {
     if (!barangAktif) return showToast("Pilih barang terlebih dahulu.", "warning");
-    document.getElementById("inNamaBarang").innerText
+    document.getElementById("inNamaBarang").innerText = barangAktif.nama;
+    document.getElementById("inBarcode").innerText = barangAktif.barcode;
+    document.getElementById("inStok").innerText = barangAktif.stok;
+    
+    isiDropdownPilihanRak("selectRakIN");
+    const elModal = document.getElementById("modalStockIn");
+    if (elModal) elModal.style.display = "flex";
+}
+function tutupStockIn() { document.getElementById("modalStockIn").style.display = "none"; }
+
+function bukaStockOut() {
+    if (!barangAktif) return showToast("Pilih barang terlebih dahulu.", "warning");
+    document.getElementById("outNamaBarang").innerText = barangAktif.nama;
+    document.getElementById("outBarcode").innerText = barangAktif.barcode;
+    document.getElementById("outStok").innerText = barangAktif.stok;
+
+    isiDropdownPilihanRak("selectRakOUT");
+    const elModal = document.getElementById("modalStockOut");
+    if (elModal) elModal.style.display = "flex";
+}
+function tutupStockOut() { document.getElementById("modalStockOut").style.display = "none"; }
+
+function bukaExpiredBarang() {
+    const container = document.getElementById("tabelExpiredContainer");
+    if (!container) return;
+
+    const skrg = new Date();
+    const listExp = daftarBarang.filter(item => {
+        if (!item.expired || item.expired === "-") return false;
+        const expDate = new Date(item.expired);
+        if (isNaN(expDate.getTime())) return false;
+        const selisihHari = Math.ceil((expDate - skrg) / (1000 * 60 * 60 * 24));
+        return selisihHari <= 30;
+    });
+
+    if (listExp.length === 0) {
+        container.innerHTML = "<p style='text-align:center; padding:15px; color:#16a34a;'><b>🟢 Semuanya Aman! Tidak ada barang mendekati expired.</b></p>";
+    } else {
+        let html = `<table style="width:100%; border-collapse:collapse; font-size:13px; text-align:left;">
+            <thead><tr style="background:#fee2e2; color:#991b1b;"><th style="padding:8px;">Barang</th><th style="padding:8px;">Expired</th></tr></thead><tbody>`;
+        listExp.forEach(b => {
+            html += `<tr style="border-bottom:1px solid #fecaca;"><td style="padding:8px;"><b>${b.nama}</b><br><small>${b.barcode}</small></td><td style="padding:8px;">${b.expired}<br><small style="color:#dc2626;">${cekExpired(b.expired)}</small></td></tr>`;
+        });
+        html += `</tbody></table>`;
+        container.innerHTML = html;
+    }
+    document.getElementById("modalExpired").style.display = "flex";
+}
+function tutupExpiredBarang() { document.getElementById("modalExpired").style.display = "none"; }
+
+// Buka Modal Pop-up Daftar Barang Hampir Habis / Re-Order
+function bukaBarangStokMin() {
+    const listStokMin = daftarBarang.filter(item => {
+        const batasMin = item.stokMin !== undefined ? Number(item.stokMin) : 5;
+        return Number(item.stok || 0) <= batasMin;
+    });
+
+    bukaDaftarStok();
+    renderTabelStok(listStokMin);
+}
+
+function bukaHistory() {
+    const elContainer = document.getElementById("historyTransaksi");
+    if (!elContainer) return;
+
+    if (historyTransaksi.length === 0) {
+        elContainer.innerHTML = "<p style='text-align:center; color:#64748b;'>Belum ada transaksi recorded.</p>";
+    } else {
+        let html = "<ul style='list-style:none; padding:0; font-size:13px;'>";
+        historyTransaksi.slice(0, 50).forEach(log => {
+            html += `<li style='border-bottom:1px solid #cbd5e1; padding:8px 0;'>
+                <b>${log.jenis}</b> - ${log.nama} (${log.jumlah || 0} pcs)<br>
+                <small style='color:#64748b;'>⏱️ ${log.waktu} | 👤 ${log.user} ${log.keterangan ? '| ' + log.keterangan : ''}</small>
+            </li>`;
+        });
+        html += "</ul>";
+        elContainer.innerHTML = html;
+    }
+    document.getElementById("modalHistory").style.display = "flex";
+}
+function tutupHistory() { document.getElementById("modalHistory").style.display = "none"; }
+
+function bukaSetting() { document.getElementById("modalSetting").style.display = "flex"; }
+function tutupSetting() { document.getElementById("modalSetting").style.display = "none"; }
+
+// ==========================================================
+// 7. SCANNER KAMERA, LASER HHT & NORMALISASI FLEKSIBEL BARCODE
+// ==========================================================
+
+// Sanitasi Angka Barcode (Buang Spasi & Karakter Non-Digit)
+function bersihkanBarcode(barcode) {
+    if (barcode === null || barcode === undefined) return "";
+    return String(barcode).replace(/\D/g, "").trim();
+}
+
+// Perbandingan Cerdas: Menangani Awalan Nol (0), UPC (12 Digit), EAN (13 Digit), dan Ketiadaan Digit Nol
+function cocokkanBarcode(barcode1, barcode2) {
+    const b1 = bersihkanBarcode(barcode1);
+    const b2 = bersihkanBarcode(barcode2);
+
+    if (!b1 || !b2) return false;
+    if (b1 === b2) return true;
+
+    // 1. Bandingkan versi yang dibuang angka '0' di paling depan
+    const b1TanpaNol = b1.replace(/^0+/, '');
+    const b2TanpaNol = b2.replace(/^0+/, '');
+
+    if (b1TanpaNol && b2TanpaNol && b1TanpaNol === b2TanpaNol) {
+        return true;
+    }
+
+    // 2. Bandingkan jika salah satu merupakan akhiran dari kode yang lain
+    if (b1.length >= 10 && b2.length >= 10) {
+        if (b1.endsWith(b2) || b2.endsWith(b1)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+// Helper Suara Beep (Sukses = Cetuk / Error = Double Beep)
+function bunyiBeep(tipe = "sukses") {
+    try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        if (tipe === "sukses") {
+            osc.type = "sine";
+            osc.frequency.setValueAtTime(350, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.08);
+        } else if (tipe === "error") {
+            osc.type = "sawtooth";
+            osc.frequency.setValueAtTime(750, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            osc.start();
+            
+            setTimeout(() => {
+                osc.frequency.setValueAtTime(450, audioCtx.currentTime);
+            }, 100);
+
+            setTimeout(() => {
+                osc.stop();
+                audioCtx.close();
+            }, 250);
+        }
+    } catch (e) {
+        console.warn("AudioContext error/not allowed:", e);
+    }
+}
+
+function jalankanScannerKamera(onSuccessCallback) {
+    if (!html5QrCode) {
+        html5QrCode = new Html5Qrcode("reader");
+    }
+
+    Html5Qrcode.getCameras().then(devices => {
+        if (devices && devices.length > 0) {
+            let backCamera = devices.find(device => {
+                const label = device.label.toLowerCase();
+                return label.includes("back") || label.includes("rear") || label.includes("belakang") || label.includes("environment");
+            });
+
+            let selectedCameraId = backCamera ? backCamera.id : devices[devices.length - 1].id;
+
+            html5QrCode.start(
+                selectedCameraId,
+                { fps: 10, qrbox: { width: 220, height: 220 } },
+                function (decodedText) {
+                    tutupScan();
+                    onSuccessCallback(decodedText);
+                },
+                function (error) {}
+            ).catch(err => {
+                console.error("Gagal start kamera via ID:", err);
+                fallbackStartKamera(onSuccessCallback);
+            });
+        } else {
+            fallbackStartKamera(onSuccessCallback);
+        }
+    }).catch(err => {
+        console.error("Gagal getCameras:", err);
+        fallbackStartKamera(onSuccessCallback);
+    });
+}
+
+function fallbackStartKamera(onSuccessCallback) {
+    html5QrCode.start(
+        { facingMode: { exact: "environment" } },
+        { fps: 10, qrbox: { width: 220, height: 220 } },
+        function (decodedText) {
+            tutupScan();
+            onSuccessCallback(decodedText);
+        },
+        function (error) {}
+    ).catch(() => {
+        html5QrCode.start(
+            { facingMode: "user" },
+            { fps: 10, qrbox: { width: 220, height: 220 } },
+            function (decodedText) {
+                tutupScan();
+                onSuccessCallback(decodedText);
+            },
+            function () {}
+        );
+    });
+}
+
+function hubungkanLaserHHTKeSelect(idSelect) {
+    const elSelect = document.getElementById(idSelect);
+    if (!elSelect) return;
+
+    let bufferScan = "";
+    let timerBuffer = null;
+
+    elSelect.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.keyCode === 13) {
+            e.preventDefault();
+            const hasilScanLaser = bufferScan.trim();
+            if (hasilScanLaser !== "") {
+                pilihAtauBuatOpsiRak(idSelect, hasilScanLaser);
+                bufferScan = "";
+            }
+        } else if (e.key.length === 1) {
+            bufferScan += e.key;
+            clearTimeout(timerBuffer);
+            timerBuffer = setTimeout(() => { bufferScan = ""; }, 150);
+        }
+    });
+}
+
+function mulaiScan() {
+    const elModalScan = document.getElementById("modalScan");
+    if (elModalScan) elModalScan.style.display = "flex";
+
+    jalankanScannerKamera(function (decodedText) {
+        const barang = daftarBarang.find(item => cocokkanBarcode(item.barcode, decodedText));
+
+        if (barang) {
+            bunyiBeep("sukses");
+            tampilkanDetailBarang(barang);
+        } else {
+            bunyiBeep("error");
+            showToast(`❌ Barang (${decodedText}) tidak ditemukan!`, "error", 2500);
+        }
+    });
+}
+
+function cekAutoFillTambahBarang(barcode) {
+    if (!barcode) return;
+
+    const inputNama = document.getElementById("tambahNama");
+    const inputSku = document.getElementById("tambahSku");
+    const inputLokasi = document.getElementById("tambahLokasi");
+    const inputExpired = document.getElementById("tambahExpired");
+    const inputStokMin = document.getElementById("tambahStokMin");
+
+    const barangAda = daftarBarang.find(item => cocokkanBarcode(item.barcode, barcode));
+
+    if (barangAda) {
+        if (inputNama) inputNama.value = barangAda.nama || "";
+        if (inputSku) inputSku.value = barangAda.sku && barangAda.sku !== "-" ? barangAda.sku : "";
+        if (inputLokasi) inputLokasi.value = barangAda.lokasi && barangAda.lokasi !== "-" ? barangAda.lokasi : "";
+        if (inputExpired && barangAda.expired && barangAda.expired !== "-") inputExpired.value = barangAda.expired;
+        if (inputStokMin) inputStokMin.value = barangAda.stokMin !== undefined ? barangAda.stokMin : 5;
+
+        const inputStok = document.getElementById("tambahStok");
+        if (inputStok) inputStok.focus();
+    }
+}
+
+function scanUntukTambahBarang() {
+    const elModalScan = document.getElementById("modalScan");
+    if (elModalScan) elModalScan.style.display = "flex";
+
+    jalankanScannerKamera(function (decodedText) {
+        const inputBarcode = document.getElementById("tambahBarcode");
+        if (inputBarcode) {
+            inputBarcode.value = decodedText;
+            cekAutoFillTambahBarang(decodedText);
+        }
+    });
+}
+
+function scanBarcodeRak(targetElementId) {
+    targetSelectRakId = targetElementId;
+    const elModalScan = document.getElementById("modalScan");
+    if (elModalScan) elModalScan.style.display = "flex";
+
+    jalankanScannerKamera(function (decodedText) {
+        pilihAtauBuatOpsiRak(targetSelectRakId, decodedText.trim());
+    });
+}
+
+function pilihAtauBuatOpsiRak(selectId, namaRak) {
+    const elSelect = document.getElementById(selectId);
+    if (!elSelect) return;
+
+    let opsiAda = Array.from(elSelect.options).find(opt => opt.value.toLowerCase() === namaRak.toLowerCase());
+
+    if (!opsiAda) {
+        const newOption = document.createElement("option");
+        newOption.value = namaRak;
+        newOption.text = `Rak ${namaRak} (Hasil Scan)`;
+        newOption.selected = true;
+        elSelect.add(newOption);
+        showToast(`✅ Rak "${namaRak}" terdeteksi!`, "success");
+    } else {
+        elSelect.value = opsiAda.value;
+        showToast(`✅ Dipilih: Rak ${opsiAda.value}`, "info");
+    }
+}
+
+function tutupScan() {
+    if (html5QrCode && html5QrCode.isScanning) {
+        html5QrCode.stop().then(() => {
+            document.getElementById("modalScan").style.display = "none";
+        }).catch(() => {
+            document.getElementById("modalScan").style.display = "none";
+        });
+    } else {
+        document.getElementById("modalScan").style.display = "none";
+    }
+}
+
+function cariBarang() {
+    const key = document.getElementById("keyword").value.trim().toLowerCase();
+    if (key === "") return showToast("Masukkan kata kunci pencarian.", "warning");
+
+    const barang = daftarBarang.find(item =>
+        item.nama.toLowerCase().includes(key) ||
+        cocokkanBarcode(item.barcode, key) ||
+        String(item.sku || "").toLowerCase().includes(key)
+    );
+
+    if (!barang) {
+        bunyiBeep("error");
+        return showToast("❌ Barang tidak ditemukan", "error");
+    }
+
+    bunyiBeep("sukses");
+    tampilkanDetailBarang(barang);
+}
+
+function tampilkanDetailBarang(barang) {
+    barangAktif = barang;
+
+    document.getElementById("namaBarang").innerHTML = barang.nama;
+    document.getElementById("hasilScanText").innerHTML = barang.barcode;
+    document.getElementById("skuBarang").innerHTML = barang.sku || '-';
+    document.getElementById("stokBarang").innerHTML = barang.stok;
+    document.getElementById("lokasiBarang").innerHTML = barang.lokasi || '-';
+    document.getElementById("expiredBarang").innerHTML = barang.expired + "<br>" + cekExpired(barang.expired);
+
+    renderDetailRak(barang);
+
+    const elDetail = document.getElementById("detailBarang");
+    if (elDetail) elDetail.style.display = "flex";
+}
+
+function tutupDetailBarang() {
+    const elDetail = document.getElementById("detailBarang");
+    if (elDetail) elDetail.style.display = "none";
+}
+
+// ==========================================================
+// 8. KELOLA USER (ADMIN) & TAMBAH BARANG
+// ==========================================================
+function tambahUserBaruPrompt() {
+    if (!userAktifInfo || userAktifInfo.role !== "admin") return showToast("⛔ Hanya Admin yang bisa menambah NIK baru.", "error");
+
+    const nikBaru = prompt("Masukkan NIK Karyawan Baru:");
+    if (!nikBaru || !nikBaru.trim()) return;
+
+    let users = getDatabaseUser();
+    if (users.find(u => String(u.nik) === nikBaru.trim())) return showToast("⚠️ NIK sudah terdaftar!", "warning");
+
+    const namaBaru = prompt("Masukkan Nama Lengkap Karyawan:");
+    if (!namaBaru || !namaBaru.trim()) return;
+
+    const passBaru = prompt("Masukkan Password:");
+    if (!passBaru || !passBaru.trim()) return;
+
+    const roleBaru = confirm("Jadikan akun ini ADMIN?\n[OK] = Admin | [Batal] = Staff") ? "admin" : "staff";
+
+    const userBaru = { nik: nikBaru.trim(), password: passBaru.trim(), role: roleBaru, nama: namaBaru.trim() };
+
+    users.push(userBaru);
+    localStorage.setItem("databaseUser", JSON.stringify(users));
+
+    if (navigator.onLine && GOOGLE_SHEET_URL) {
+        fetch(GOOGLE_SHEET_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain" },
+            body: JSON.stringify({
+                token: API_SECRET_TOKEN,
+                aksi: "tambahUser",
+                user: userBaru
+            })
+        });
+    }
+
+    showToast(`✅ User ${namaBaru} berhasil ditambahkan!`, "success");
+}
+
+function kelolaDanHapusUser() {
+    if (!userAktifInfo || userAktifInfo.role !== "admin") return showToast("⛔ Hanya Admin yang bisa menghapus user.", "error");
+
+    let users = getDatabaseUser();
+    let pesan = "📋 DAFTAR NIK TERDAFTAR:\n";
+    users.forEach((u, i) => { pesan += `${i + 1}. NIK: ${u.nik} | ${u.nama} (${u.role.toUpperCase()})\n`; });
+    pesan += "\nMasukkan NIK yang ingin DIHAPUS:";
+
+    const nikHapus = prompt(pesan);
+    if (!nikHapus || !nikHapus.trim()) return;
+
+    const index = users.findIndex(u => String(u.nik) === nikHapus.trim());
+    if (index !== -1) {
+        users.splice(index, 1);
+        localStorage.setItem("databaseUser", JSON.stringify(users));
+        showToast("✅ NIK berhasil dihapus!", "success");
+    } else {
+        showToast("❌ NIK tidak ditemukan.", "error");
+    }
+}
+
+function bukaTambahBarang(defaultBarcode = "") {
+    const inputBarcode = document.getElementById("tambahBarcode");
+    const inputNama = document.getElementById("tambahNama");
+    const inputSku = document.getElementById("tambahSku");
+    const inputStok = document.getElementById("tambahStok");
+    const inputStokMin = document.getElementById("tambahStokMin");
+    const inputLokasi = document.getElementById("tambahLokasi");
+    const inputExpired = document.getElementById("tambahExpired");
+
+    if (inputBarcode) inputBarcode.value = defaultBarcode;
+    if (inputNama) inputNama.value = "";
+    if (inputSku) inputSku.value = "";
+    if (inputStok) inputStok.value = "";
+    if (inputStokMin) inputStokMin.value = "5";
+    if (inputLokasi) inputLokasi.value = "";
+    if (inputExpired) inputExpired.value = "";
+
+    document.getElementById("modalTambahBarang").style.display = "flex";
+
+    if (inputBarcode) {
+        inputBarcode.focus();
+
+        inputBarcode.oninput = function () {
+            cekAutoFillTambahBarang(this.value.trim());
+        };
+
+        if (defaultBarcode) {
+            cekAutoFillTambahBarang(defaultBarcode);
+        }
+    }
+}
+
+function tutupTambahBarang() { document.getElementById("modalTambahBarang").style.display = "none"; }
+
+function simpanBarangBaru() {
+    const barcode = document.getElementById("tambahBarcode").value.trim();
+    const nama = document.getElementById("tambahNama").value.trim();
+    const sku = document.getElementById("tambahSku").value.trim();
+    const stok = Number(document.getElementById("tambahStok").value);
+    const stokMin = Number(document.getElementById("tambahStokMin")?.value || 5);
+    const lokasi = document.getElementById("tambahLokasi").value.trim();
+    const expired = document.getElementById("tambahExpired").value;
+
+    if (!barcode || !nama || isNaN(stok) || stok < 0) return showToast("⚠️ Barcode, Nama, dan Stok Wajib Diisi.", "warning");
+
+    let barangExisting = daftarBarang.find(item => cocokkanBarcode(item.barcode, barcode));
+
+    if (barangExisting) {
+        barangExisting.stok = Number(barangExisting.stok || 0) + stok;
+        barangExisting.stokMin = stokMin;
+        if (lokasi && lokasi !== "-") barangExisting.lokasi = lokasi;
+        if (expired && expired !== "-") barangExisting.expired = expired;
+        if (sku && sku !== "-") barangExisting.sku = sku;
+        
+        const listRak = dapatkanListRak(barangExisting);
+        let targetRak = listRak.find(r => r.rak.toLowerCase() === (lokasi || "Utama / Transit").toLowerCase());
+        if (targetRak) {
+            targetRak.qty += stok;
+        } else {
+            listRak.push({ rak: lokasi || "Utama / Transit", qty: stok });
+        }
+        barangExisting.detailRak = listRak;
+
+        localStorage.setItem("daftarBarang", JSON.stringify(daftarBarang));
+        tampilkanDetailBarang(barangExisting);
+    } else {
+        const barangBaru = { barcode, nama, sku: sku || "-", stok, stokMin, lokasi: lokasi || "-", expired: expired || "-" };
+        daftarBarang.push(barangBaru);
+        localStorage.setItem("daftarBarang", JSON.stringify(daftarBarang));
+        tampilkanDetailBarang(barangBaru);
+    }
+
+    syncKeGoogleSheet();
+    kirimTransaksiKeGoogleSheet({
+        jenis: "BARANG BARU / TAMBAH STOK",
+        barcode, namaBarang: nama, jumlah: stok, user: userAktif, keterangan: "Pendaftaran/Penambahan Stok"
+    });
+
+    updateDashboardStats();
+    tutupTambahBarang();
+    showToast("✅ Stok / Barang Baru Berhasil Disimpan!", "success");
+}
+
+// ==========================================================
+// 9. DAFTAR STOK BARANG & UTILS
+// ==========================================================
+function bukaDaftarStok() {
+    document.getElementById("modalDaftarStok").style.display = "flex";
+    renderTabelStok(daftarBarang);
+}
+function tutupDaftarStok() { document.getElementById("modalDaftarStok").style.display = "none"; }
+
+function renderTabelStok(dataList) {
+    const container = document.getElementById("tabelStokContainer");
+    if (!container) return;
+
+    if (!dataList || dataList.length === 0) {
+        container.innerHTML = "<div style='text-align:center; padding:20px; color:#64748b;'>Barang tidak ditemukan.</div>";
+        return;
+    }
+
+    let html = `<table style="width:100%; border-collapse:collapse; font-size:13px; text-align:left;">
+        <thead><tr style="background:#e2e8f0; color:#334155;"><th style="padding:8px;">Barang</th><th style="padding:8px; text-align:center;">Stok</th><th style="padding:8px; text-align:center;">Aksi</th></tr></thead><tbody>`;
+
+    dataList.slice(0, 100).forEach(item => {
+        html += `<tr style="border-bottom:1px solid #e2e8f0;">
+            <td style="padding:8px;"><b>${item.nama}</b><br><small style="color:#64748b;">${item.barcode}</small></td>
+            <td style="padding:8px; text-align:center;"><b>${item.stok}</b></td>
+            <td style="padding:8px; text-align:center;"><button onclick="pilihBarangDariTabel('${item.barcode}')" style="background:#2563eb; color:white; border:none; padding:5px 10px; border-radius:6px; cursor:pointer;">Pilih</button></td>
+        </tr>`;
+    });
+
+    html += `</tbody></table>`;
+    container.innerHTML = html;
+}
+
+function filterTabelStok() {
+    const key = document.getElementById("filterStokInput").value.trim().toLowerCase();
+    if (!key) return renderTabelStok(daftarBarang);
+
+    const hasil = daftarBarang.filter(i => 
+        (i.nama && i.nama.toLowerCase().includes(key)) ||
+        cocokkanBarcode(i.barcode, key)
+    );
+    renderTabelStok(hasil);
+}
+
+function pilihBarangDariTabel(barcode) {
+    const barang = daftarBarang.find(b => cocokkanBarcode(b.barcode, barcode));
+    if (barang) {
+        tutupDaftarStok();
+        tampilkanDetailBarang(barang);
+    } else {
+        showToast("❌ Barang tidak ditemukan", "error");
+    }
+}
+
+function cekExpired(tanggalExpired) {
+    if (!tanggalExpired || tanggalExpired === "-") return "🟢 AMAN";
+    const skrg = new Date();
+    const expired = new Date(tanggalExpired);
+    if (isNaN(expired.getTime())) return "🟢 AMAN";
+
+    const hari = Math.ceil((expired - skrg) / (1000 * 60 * 60 * 24));
+    if (hari < 0) return "🔴 EXPIRED";
+    if (hari <= 30) return "🟠 HAMPIR EXPIRED (" + hari + " hari)";
+    return "🟢 AMAN (" + hari + " hari)";
+}
+
+function pasangHHTEnter(idInput, aksi) {
+    const el = document.getElementById(idInput);
+    if (!el) return;
+
+    let timerHHT = null;
+
+    el.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.keyCode === 13) {
+            e.preventDefault();
+            clearTimeout(timerHHT);
+            timerHHT = setTimeout(() => {
+                const nilaiClean = el.value.trim();
+                if (nilaiClean !== "") {
+                    aksi(nilaiClean);
+                }
+            }, 50);
+        }
+    });
+
+    el.addEventListener("focus", function() {
+        this.select();
+    });
+}
+
+function switchDarkMode(isDark) {
+    if (isDark) {
+        document.body.classList.add("dark-mode");
+        localStorage.setItem("darkMode", "true");
+    } else {
+        document.body.classList.remove("dark-mode");
+        localStorage.setItem("darkMode", "false");
+    }
+}
+
+function resetHistory() {
+    if (confirm("Yakin ingin menghapus seluruh riwayat transaksi di HP ini?")) {
+        historyTransaksi = [];
+        localStorage.removeItem("historyTransaksi");
+        showToast("🗑️ Riwayat transaksi berhasil dibersihkan!", "info");
+    }
+}
+
+// ==========================================================
+// TOAST NOTIFICATION & VIBRATION HELPER
+// ==========================================================
+function showToast(pesan, tipe = "success", durasi = 2200) {
+    const container = document.getElementById("toastContainer");
+    if (!container) return alert(pesan);
+
+    if ("vibrate" in navigator) {
+        if (tipe === "error") {
+            navigator.vibrate([100, 50, 100]);
+        } else {
+            navigator.vibrate(80);
+        }
+    }
+
+    const toast = document.createElement("div");
+    toast.className = `toast ${tipe}`;
+    toast.innerHTML = `<span>${pesan}</span>`;
+
+    container.appendChild(toast);
+
+    setTimeout(() => {
+        toast.style.animation = "fadeOutToast 0.25s ease-in forwards";
+        setTimeout(() => {
+            if (toast.parentNode) toast.parentNode.removeChild(toast);
+        }, 250);
+    }, durasi);
+}
+
+// ==========================================================
+// REGISTER SERVICE WORKER (PWA)
+// ==========================================================
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('📱 PWA Service Worker Terdaftar!'))
+            .catch(err => console.error('❌ Gagal daftar Service Worker:', err));
+    });
+}
