@@ -1389,3 +1389,50 @@ if ('serviceWorker' in navigator) {
             .catch(err => console.error('❌ Gagal daftar Service Worker:', err));
     });
 }
+// CUSTOM PROMPT PENGGANTI POP-UP BROWSER
+function bukaCustomPrompt(judul, deskripsi, placeholder, tipeInput = "text", callback) {
+    const modal = document.getElementById("modalCustomPrompt");
+    const elTitle = document.getElementById("customPromptTitle");
+    const elDesc = document.getElementById("customPromptDesc");
+    const elInput = document.getElementById("customPromptInput");
+    const btnOk = document.getElementById("customPromptBtnOk");
+    const btnBatal = document.getElementById("customPromptBtnBatal");
+
+    if (!modal) return;
+
+    elTitle.innerText = judul;
+    elDesc.innerText = deskripsi;
+    elInput.value = "";
+    elInput.type = tipeInput;
+    elInput.placeholder = placeholder;
+
+    modal.style.display = "flex";
+    setTimeout(() => elInput.focus(), 100);
+
+    // Hapus event listener lama agar tidak menumpuk
+    const newBtnOk = btnOk.cloneNode(true);
+    const newBtnBatal = btnBatal.cloneNode(true);
+    btnOk.parentNode.replaceChild(newBtnOk, btnOk);
+    btnBatal.parentNode.replaceChild(newBtnBatal, btnBatal);
+
+    // Event saat klik OK
+    document.getElementById("customPromptBtnOk").onclick = function () {
+        const hasil = elInput.value.trim();
+        modal.style.display = "none";
+        if (callback) callback(hasil);
+    };
+
+    // Event saat tekan Enter di input
+    elInput.onkeydown = function (e) {
+        if (e.key === "Enter" || e.keyCode === 13) {
+            e.preventDefault();
+            document.getElementById("customPromptBtnOk").click();
+        }
+    };
+
+    // Event saat klik Batal
+    document.getElementById("customPromptBtnBatal").onclick = function () {
+        modal.style.display = "none";
+        if (callback) callback(null);
+    };
+}
