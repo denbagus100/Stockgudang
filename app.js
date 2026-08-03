@@ -306,10 +306,9 @@ function loadDataStokDariSheet() {
     .then(res => res.json())
     .then(res => {
         if (res.status === "success" && res.data.length > 0) {
-            // Normalisasi awal untuk memastikan atribut barcode selalu string rapi
             daftarBarang = res.data.map(item => ({
                 ...item,
-                barcode: String(item.barcode).trim()
+                barcode: String(item.barcode || "").trim()
             }));
             localStorage.setItem("daftarBarang", JSON.stringify(daftarBarang));
             updateDashboardStats();
@@ -811,37 +810,27 @@ function bukaSetting() { document.getElementById("modalSetting").style.display =
 function tutupSetting() { document.getElementById("modalSetting").style.display = "none"; }
 
 // ==========================================================
-// 7. SCANNER KAMERA, LASER HHT & NORMALISASI BARCODE
+// 7. SCANNER KAMERA, LASER HHT & NORMALISASI RADIKAL BARCODE
 // ==========================================================
 
-// Helper Normalisasi & Pencocokan Barcode (0-9 Fleksibel)
+// Fungsi Sanitasi String Barcode
 function bersihkanBarcode(barcode) {
-    if (!barcode) return "";
-    return String(barcode).trim();
+    if (barcode === null || barcode === undefined) return "";
+    return String(barcode).replace(/\D/g, ""); // Hanya ambil karakter angka (buang spasi/non-digit)
 }
 
 function cocokkanBarcode(barcode1, barcode2) {
-    const b1 = String(barcode1).trim();
-    const b2 = String(barcode2).trim();
+    const b1 = bersihkanBarcode(barcode1);
+    const b2 = bersihkanBarcode(barcode2);
 
+    if (!b1 || !b2) return false;
     if (b1 === b2) return true;
 
-    // Variasi perbandingan (13 Digit EAN vs 12 Digit UPC / Tanpa Digit Pertama)
-    const variasiB1 = [b1];
-    if (b1.length === 13) variasiB1.push(b1.substring(1));
-    if (b1.length === 12) variasiB1.unshift("0" + b1);
+    // Normalisasi Radikal: Jika ada 13 digit, bandingkan juga versi 12 digit (tanpa digit pertama)
+    const b1Core = b1.length === 13 ? b1.substring(1) : b1;
+    const b2Core = b2.length === 13 ? b2.substring(1) : b2;
 
-    const variasiB2 = [b2];
-    if (b2.length === 13) variasiB2.push(b2.substring(1));
-    if (b2.length === 12) variasiB2.unshift("0" + b2);
-
-    for (let v1 of variasiB1) {
-        for (let v2 of variasiB2) {
-            if (v1 === v2) return true;
-        }
-    }
-
-    return false;
+    return b1Core === b2Core;
 }
 
 // Helper Suara Beep (Sukses = Cetuk / Error = Double Beep)
@@ -855,14 +844,12 @@ function bunyiBeep(tipe = "sukses") {
         gain.connect(audioCtx.destination);
 
         if (tipe === "sukses") {
-            // Suara "Cetuk" Singkat Rendah (350Hz, 0.08 detik)
             osc.type = "sine";
             osc.frequency.setValueAtTime(350, audioCtx.currentTime);
             gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
             osc.start();
             osc.stop(audioCtx.currentTime + 0.08);
         } else if (tipe === "error") {
-            // Suara Peringatan Error
             osc.type = "sawtooth";
             osc.frequency.setValueAtTime(750, audioCtx.currentTime);
             gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
@@ -900,7 +887,6 @@ function jalankanScannerKamera(onSuccessCallback) {
                 selectedCameraId,
                 { fps: 10, qrbox: { width: 220, height: 220 } },
                 function (decodedText) {
-                    // Kamera MESTI dimatikan DULUAN agar tidak looping scan!
                     tutupScan();
                     onSuccessCallback(decodedText);
                 },
@@ -968,15 +954,12 @@ function mulaiScan() {
     if (elModalScan) elModalScan.style.display = "flex";
 
     jalankanScannerKamera(function (decodedText) {
-        // Cari barang menggunakan pencocokan fleksibel cocokkanBarcode
         const barang = daftarBarang.find(item => cocokkanBarcode(item.barcode, decodedText));
 
         if (barang) {
-            // BARANG DITEMUKAN -> Suara "Cetuk" & Tampilkan Detail
             bunyiBeep("sukses");
             tampilkanDetailBarang(barang);
         } else {
-            // BARANG TIDAK DITEMUKAN -> Suara Error & Toast tanpa popup confirm
             bunyiBeep("error");
             showToast(`❌ Barang (${decodedText}) tidak ditemukan!`, "error", 2500);
         }
@@ -1283,7 +1266,7 @@ function filterTabelStok() {
 
     const hasil = daftarBarang.filter(i => 
         (i.nama && i.nama.toLowerCase().includes(key)) ||
-        (i.barcode && String(i.barcode).toLowerCase().includes(key))
+        cocokkanBarcode(i.barcode, key)
     );
     renderTabelStok(hasil);
 }
