@@ -1,0 +1,21 @@
+{
+  "short_name": "StockGudang",
+  "name": "Stock Gudang WMS",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/684/684908.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/684/684908.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "./index.html",
+  "background_color": "#0f172a",
+  "theme_color": "#2563eb",
+  "display": "standalone",
+  "orientation": "portrait"
+}
