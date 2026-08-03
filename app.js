@@ -25,16 +25,45 @@ let userAktif = userAktifInfo ? userAktifInfo.nama : "";
 let offlineQueue = JSON.parse(localStorage.getItem("offlineQueue")) || [];
 
 // ==========================================================
+// KATA MOTIVASI RANDOM (QUOTE OF THE DAY)
+// ==========================================================
+const daftarMotivasi = [
+    { teks: "Kerapihan dan ketelitian gudang hari ini adalah kelancaran pengiriman esok hari.", penulis: "Tim Gudang" },
+    { teks: "Kerja cepat itu bagus, tapi kerja teliti dan aman itu yang utama!", penulis: "Safety First" },
+    { teks: "Setiap barang yang tersusun rapi adalah cerminan kerja keras tim yang hebat.", penulis: "Semangat Gudang" },
+    { teks: "Stok yang akurat mencegah masalah besar. Terima kasih atas ketelitianmu!", penulis: "WMS System" },
+    { teks: "Fokus pada proses, hasil tidak akan pernah mengkhianati usaha.", penulis: "Motivasi Kerja" },
+    { teks: "Kesuksesan besar dimulai dari kedisiplinan pada hal-hal kecil di area kerja.", penulis: "Quotes Karyawan" },
+    { teks: "Tetap semangat dan utamakan keselamatan kerja di setiap langkah!", penulis: "Warehouse Team" }
+];
+
+function tampilkanMotivasiRandom() {
+    const elTeks = document.getElementById("teksMotivasi");
+    const elPenulis = document.getElementById("penulisMotivasi");
+
+    if (!elTeks || !elPenulis) return;
+
+    const acak = Math.floor(Math.random() * daftarMotivasi.length);
+    const item = daftarMotivasi[acak];
+
+    elTeks.innerText = `"${item.teks}"`;
+    elPenulis.innerText = `— ${item.penulis}`;
+}
+
+// ==========================================================
 // 2. INITIALIZATION & SYSTEM LOGIN
 // ==========================================================
 document.addEventListener("DOMContentLoaded", function () {
     // 1. Cek Status Login DULUAN agar tidak berbayang saat refresh
     cekStatusLogin();
 
-    // 2. Logika Ingat NIK
+    // 2. Tampilkan Kata Motivasi Random
+    tampilkanMotivasiRandom();
+
+    // 3. Logika Ingat NIK
     muatNikTersimpan();
 
-    // 3. Tampilkan Tanggal Hari Ini
+    // 4. Tampilkan Tanggal Hari Ini
     const sekarang = new Date();
     const elTanggal = document.getElementById("tanggal");
     if (elTanggal) {
@@ -43,19 +72,19 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // 4. Load Data Stok dari Google Sheets
+    // 5. Load Data Stok dari Google Sheets
     loadDataStokDariSheet();
 
-    // 5. Status Jaringan
+    // 6. Status Jaringan
     updateStatusJaringan();
 
-    // 6. Load Mode Gelap (Dark Mode)
+    // 7. Load Mode Gelap (Dark Mode)
     const isDarkMode = localStorage.getItem("darkMode") === "true";
     if (isDarkMode) document.body.classList.add("dark-mode");
     const toggleSwitch = document.getElementById("toggleDarkMode");
     if (toggleSwitch) toggleSwitch.checked = isDarkMode;
 
-    // 7. Pasang Scanner Laser HHT (Enter Otomatis)
+    // 8. Pasang Scanner Laser HHT (Enter Otomatis)
     pasangHHTEnter("keyword", cariBarang);
     pasangHHTEnter("tambahBarcode", () => document.getElementById("tambahNama")?.focus());
     pasangHHTEnter("jumlahIN", simpanStockIn);
