@@ -807,8 +807,38 @@ function bukaSetting() { document.getElementById("modalSetting").style.display =
 function tutupSetting() { document.getElementById("modalSetting").style.display = "none"; }
 
 // ==========================================================
-// 7. SCANNER KAMERA, LASER HHT & SUARA RESPONSIVE
+// 7. SCANNER KAMERA, LASER HHT & NORMALISASI BARCODE
 // ==========================================================
+
+// Helper Normalisasi & Pencocokan Barcode (0-9 Fleksibel)
+function bersihkanBarcode(barcode) {
+    if (!barcode) return "";
+    return String(barcode).trim();
+}
+
+function cocokkanBarcode(barcode1, barcode2) {
+    const b1 = String(barcode1).trim();
+    const b2 = String(barcode2).trim();
+
+    if (b1 === b2) return true;
+
+    // Variasi perbandingan (13 Digit EAN vs 12 Digit UPC / Tanpa Digit Pertama)
+    const variasiB1 = [b1];
+    if (b1.length === 13) variasiB1.push(b1.substring(1));
+    if (b1.length === 12) variasiB1.unshift("0" + b1);
+
+    const variasiB2 = [b2];
+    if (b2.length === 13) variasiB2.push(b2.substring(1));
+    if (b2.length === 12) variasiB2.unshift("0" + b2);
+
+    for (let v1 of variasiB1) {
+        for (let v2 of variasiB2) {
+            if (v1 === v2) return true;
+        }
+    }
+
+    return false;
+}
 
 // Helper Suara Beep (Sukses = Cetuk / Error = Double Beep)
 function bunyiBeep(tipe = "sukses") {
@@ -934,8 +964,8 @@ function mulaiScan() {
     if (elModalScan) elModalScan.style.display = "flex";
 
     jalankanScannerKamera(function (decodedText) {
-        // Cari barang di database
-        const barang = daftarBarang.find(item => String(item.barcode).trim() === String(decodedText).trim());
+        // Cari barang menggunakan pencocokan fleksibel cocokkanBarcode
+        const barang = daftarBarang.find(item => cocokkanBarcode(item.barcode, decodedText));
 
         if (barang) {
             // BARANG DITEMUKAN -> Suara "Cetuk" & Tampilkan Detail
@@ -958,7 +988,7 @@ function cekAutoFillTambahBarang(barcode) {
     const inputExpired = document.getElementById("tambahExpired");
     const inputStokMin = document.getElementById("tambahStokMin");
 
-    const barangAda = daftarBarang.find(item => String(item.barcode).trim() === String(barcode).trim());
+    const barangAda = daftarBarang.find(item => cocokkanBarcode(item.barcode, barcode));
 
     if (barangAda) {
         if (inputNama) inputNama.value = barangAda.nama || "";
@@ -1032,7 +1062,7 @@ function cariBarang() {
 
     const barang = daftarBarang.find(item =>
         item.nama.toLowerCase().includes(key) ||
-        String(item.barcode).includes(key) ||
+        cocokkanBarcode(item.barcode, key) ||
         String(item.sku || "").toLowerCase().includes(key)
     );
 
@@ -1172,7 +1202,7 @@ function simpanBarangBaru() {
 
     if (!barcode || !nama || isNaN(stok) || stok < 0) return showToast("⚠️ Barcode, Nama, dan Stok Wajib Diisi.", "warning");
 
-    let barangExisting = daftarBarang.find(item => String(item.barcode).trim() === barcode);
+    let barangExisting = daftarBarang.find(item => cocokkanBarcode(item.barcode, barcode));
 
     if (barangExisting) {
         barangExisting.stok = Number(barangExisting.stok || 0) + stok;
