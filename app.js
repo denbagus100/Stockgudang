@@ -1,3 +1,11 @@
+/**
+ * ==========================================================
+ * APLIKASI WMS (STOCK GUDANG)
+ * Dibuat dan Dikembangkan Oleh: Den_Baguz
+ * Tahun: 2026
+ * ==========================================================
+ */
+
 // ==========================================================
 // 0. GLOBAL ERROR HANDLER (MENCEGAH LAYAR BLANK PUTIH)
 // ==========================================================
@@ -1482,4 +1490,13 @@ function bukaCustomConfirm(judul, pesan, callback) {
         modal.style.display = "none";
         if (callback) callback(false);
     };
+}
+function bukaTentangAplikasi() {
+    const el = document.getElementById("modalTentang");
+    if (el) el.style.display = "flex";
+}
+
+function tutupTentangAplikasi() {
+    const el = document.getElementById("modalTentang");
+    if (el) el.style.display = "none";
 }
