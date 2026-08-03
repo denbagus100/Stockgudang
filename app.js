@@ -476,26 +476,30 @@ function isiDropdownPilihanRak(selectElemId) {
 function tambahBarisRakBaru() {
     if (!barangAktif) return;
     
-    const rakBaru = prompt("Masukkan Nama Rak Baru (Contoh: B atau Rak C-02):");
-    if (!rakBaru || !rakBaru.trim()) return;
+    bukaCustomPrompt("Tambah Rak Baru", "Masukkan Nama Rak Baru (Contoh: B atau Rak C-02):", "Contoh: B", "text", function(rakBaru) {
+        if (!rakBaru) return;
 
-    const listRak = dapatkanListRak(barangAktif);
+        const listRak = dapatkanListRak(barangAktif);
+        const eksis = listRak.find(r => r.rak.toLowerCase() === rakBaru.toLowerCase());
+        if (eksis) return showToast("⚠️ Rak ini sudah ada dalam daftar!", "warning");
 
-    const eksis = listRak.find(r => r.rak.toLowerCase() === rakBaru.trim().toLowerCase());
-    if (eksis) return showToast("⚠️ Rak ini sudah ada dalam daftar!", "warning");
+        bukaCustomPrompt("Jumlah Stok Awal", `Masukkan Jumlah Stok awal di Rak ${rakBaru}:`, "Contoh: 10", "number", function(qtyInput) {
+            if (qtyInput === null || qtyInput === "") return;
+            const qtyAwal = Number(qtyInput) || 0;
 
-    const qtyAwal = Number(prompt(`Masukkan Jumlah Stok awal di Rak ${rakBaru.trim()}:`, "0")) || 0;
+            barangAktif.detailRak.push({ rak: rakBaru, qty: qtyAwal });
+            barangAktif.stok = barangAktif.detailRak.reduce((acc, curr) => acc + Number(curr.qty), 0);
+            barangAktif.lokasi = barangAktif.detailRak.map(r => r.rak).join(", ");
 
-    barangAktif.detailRak.push({ rak: rakBaru.trim(), qty: qtyAwal });
-    barangAktif.stok = barangAktif.detailRak.reduce((acc, curr) => acc + Number(curr.qty), 0);
-    barangAktif.lokasi = barangAktif.detailRak.map(r => r.rak).join(", ");
-
-    localStorage.setItem("daftarBarang", JSON.stringify(daftarBarang));
-    if (typeof syncKeGoogleSheet === "function") syncKeGoogleSheet();
-    
-    tampilkanDetailBarang(barangAktif);
-    showToast(`✅ Rak ${rakBaru.trim()} berhasil ditambahkan!`, "success");
+            localStorage.setItem("daftarBarang", JSON.stringify(daftarBarang));
+            if (typeof syncKeGoogleSheet === "function") syncKeGoogleSheet();
+            
+            tampilkanDetailBarang(barangAktif);
+            showToast(`✅ Rak ${rakBaru} berhasil ditambahkan!`, "success");
+        });
+    });
 }
+
 
 function hapusBarisRak(index) {
     if (!barangAktif) return;
